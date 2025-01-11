@@ -13,11 +13,11 @@ function Sidebar() {
   const { menuOpen, toggleMenu } = useMenu();
 
   return (
-    <div className="relative flex h-screen border-r-2 border-gray-700">
+    <div className="relative flex min-h-screen border-r-2 border-gray-700">
       {/* Sidebar */}
       <div
         className={`top-0 left-0 z-50 h-screen w-screen lg:w-64 bg-gray-800 p-6 transform transition-all duration-300 ease-in-out 
-        ${menuOpen ? "absolute" : "lg:block hidden"}`} // Pokazuje sidebar w wersji desktopowej i pełnoekranowy w mobilnej
+        ${menuOpen ? "fixed" : "lg:block hidden"}`} // Pokazuje sidebar w wersji desktopowej i pełnoekranowy w mobilnej
       >
         {/* Logo */}
         <a href="/" className="text-2xl text-white font-semibold mb-8 block">
