@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "./components/Footer";
 import { MenuProvider } from "./contexts/MenuContext";
-import Sidebar from "./components/Sidebar"; // Importujemy Sidebar bez dynamicznego importu
+import Sidebar from "./components/Sidebar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,15 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="font-sans">
-        <MenuProvider>
-          <div className="flex">
+        <div className="flex w-auto">
+          <MenuProvider>
             <Sidebar />
-            <div className="flex flex-col">
-              <main>{children}</main>
-              <Footer />
-            </div>
-          </div>
-        </MenuProvider>
+            <main className="flex-grow">{children}</main>
+          </MenuProvider>
+        </div>
       </body>
     </html>
   );

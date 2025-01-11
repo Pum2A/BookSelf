@@ -1,6 +1,6 @@
 "use client"; // Komponent kliencki
 
-import React, { useState } from "react";
+import React from "react";
 import NavButton from "./reusableComponents/NavButton";
 import { CiMenuBurger } from "react-icons/ci";
 import { AiFillHome, AiOutlineInfoCircle, AiOutlineUser } from "react-icons/ai";
@@ -13,11 +13,11 @@ function Sidebar() {
   const { menuOpen, toggleMenu } = useMenu();
 
   return (
-    <div className={`relative flex h-screen `}>
+    <div className="relative flex h-screen border-r-2 border-gray-700">
       {/* Sidebar */}
       <div
-        className={`top-0 left-0 z-50 h-full-screen bg-gray-800 p-6 transform transition-all duration-300 ease-in-out 
-        ${menuOpen ? "hidden" : "block"}`}
+        className={`top-0 left-0 z-50 h-screen w-screen lg:w-64 bg-gray-800 p-6 transform transition-all duration-300 ease-in-out 
+        ${menuOpen ? "absolute" : "lg:block hidden"}`} // Pokazuje sidebar w wersji desktopowej i pełnoekranowy w mobilnej
       >
         {/* Logo */}
         <a href="/" className="text-2xl text-white font-semibold mb-8 block">
@@ -103,7 +103,7 @@ function Sidebar() {
       {/* Menu Toggle Icon */}
       <CiMenuBurger
         size={30}
-        className="text-white cursor-pointer lg:hidden fixed top-6 left-6 z-50"
+        className="text-white cursor-pointer lg:hidden fixed top-6 right-6 z-50"
         onClick={toggleMenu}
       />
     </div>
