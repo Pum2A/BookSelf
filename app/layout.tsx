@@ -1,8 +1,9 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
-import Topbar from "./components/Topbar";
 import Footer from "./components/Footer";
+import { MenuProvider } from "./contexts/MenuContext";
+import Sidebar from "./components/Sidebar"; // Importujemy Sidebar bez dynamicznego importu
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,9 +23,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="font-sans">
-        <Topbar />
-        {children}
-        <Footer />
+        <MenuProvider>
+          <div className="flex">
+            <Sidebar />
+            <div className="flex flex-col">
+              <main>{children}</main>
+              <Footer />
+            </div>
+          </div>
+        </MenuProvider>
       </body>
     </html>
   );
