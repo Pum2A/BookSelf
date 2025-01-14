@@ -43,7 +43,7 @@ export default function LoginPage() {
             type="submit"
             className="w-full py-3 bg-green-400 text-white rounded-lg hover:bg-green-500 transition duration-200"
           >
-            Log In
+            Log in
           </button>
         </form>
       </div>
