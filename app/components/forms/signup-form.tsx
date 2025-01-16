@@ -1,116 +1,117 @@
 "use client";
-import Link from "next/link";
+
 import { useState } from "react";
-import { ZodErrors } from "../custom/zod-errors";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  CardTitle,
-  CardDescription,
+  Card,
   CardHeader,
   CardContent,
   CardFooter,
-  Card,
+  CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
 
-export function SignupForm() {
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-  });
-  const [formErrors, setFormErrors] = useState<any>(null);
+export default function SignUpForm() {
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setFormErrors(null);
 
-    const res = await fetch("/api/auth/signup", {
+    const response = await fetch("/api/auth/signup", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, username, password }),
     });
 
-    const data = await res.json();
-
-    if (res.ok) {
-      // Przekierowanie lub dalsza logika po pomyślnej rejestracji
-      console.log("User created", data);
+    if (response.ok) {
+      toast.success("Account created successfully!");
+      router.push("/signin"); // Przekierowanie na stronę logowania
     } else {
-      setFormErrors(data.error);
+      const errorData = await response.json();
+      toast.error(
+        errorData.error || "Failed to create account. Please try again."
+      );
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="max-w-md w-full">
       <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold">Sign Up</CardTitle>
+        <Card className="shadow-lg border border-gray-200">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-3xl font-bold">Create Account</CardTitle>
             <CardDescription>
-              Enter your details to create a new account
+              Fill in the details to create your account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                placeholder="username"
-                value={formData.username}
-                onChange={(e) =>
-                  setFormData({ ...formData, username: e.target.value })
-                }
-              />
-              <ZodErrors error={formErrors?.username} />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                required
               />
-              <ZodErrors error={formErrors?.email} />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                required
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter a strong password"
+                required
               />
-              <ZodErrors error={formErrors?.password} />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col">
-            <button className="w-full" type="submit" disabled={loading}>
-              {loading ? "Loading..." : "Sign Up"}
+          <CardFooter className="flex flex-col gap-3">
+            <button
+              type="submit"
+              className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-200 disabled:bg-green-300"
+              disabled={loading}
+            >
+              {loading ? "Creating Account..." : "Sign Up"}
             </button>
+            <p className="text-center text-sm text-gray-500">
+              Already have an account?{" "}
+              <a href="/signin" className="text-green-500 underline">
+                Log in
+              </a>
+            </p>
           </CardFooter>
         </Card>
-        <div className="mt-4 text-center text-sm">
-          Have an account?
-          <Link className="underline ml-2" href="signin">
-            Sign In
-          </Link>
-        </div>
       </form>
     </div>
   );

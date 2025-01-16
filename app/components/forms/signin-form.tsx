@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { toast } from "react-toastify";
 
 export default function SigninForm() {
   const [email, setEmail] = useState("");
@@ -31,23 +33,25 @@ export default function SigninForm() {
     });
 
     if (response.ok) {
-      // Przekierowanie na stronę /home po pomyślnym logowaniu
+      toast.success("Successfully signed in!");
       router.push("/home");
+      router.refresh();
     } else {
-      console.log("Błąd logowania");
+      const errorData = await response.json();
+      toast.error(errorData.error || "Unable to log in. Please try again.");
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="max-w-md w-full">
       <form onSubmit={handleSubmit}>
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-3xl font-bold">Sign In</CardTitle>
+        <Card className="shadow-lg border border-gray-200">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
             <CardDescription>
-              Enter your details to sign in to your account
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -60,6 +64,7 @@ export default function SigninForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
+                required
               />
             </div>
 
@@ -71,14 +76,25 @@ export default function SigninForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="password"
+                placeholder="Enter your password"
+                required
               />
             </div>
           </CardContent>
-          <CardFooter className="flex flex-col">
-            <button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : "Sign In"}
+          <CardFooter className="flex flex-col gap-3">
+            <button
+              type="submit"
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
+              disabled={loading}
+            >
+              {loading ? "Signing In..." : "Sign In"}
             </button>
+            <p className="text-center text-sm text-gray-500">
+              Don't have an account?{" "}
+              <a href="/signup" className="text-blue-500 underline">
+                Sign up
+              </a>
+            </p>
           </CardFooter>
         </Card>
       </form>

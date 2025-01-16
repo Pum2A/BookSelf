@@ -1,5 +1,6 @@
 // Przykład przycisku do wylogowania w komponencie (np. w `Header`):
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export function SignOutButton() {
   const router = useRouter();
@@ -12,9 +13,12 @@ export function SignOutButton() {
       });
 
       // Przekierowanie po wylogowaniu, np. na stronę logowania
+      router.refresh();
       router.push("/signin");
+      toast.success("Signed out successfully");
     } catch (error) {
       console.error("Error signing out", error);
+      toast.error("Failed to sign out");
     }
   };
 

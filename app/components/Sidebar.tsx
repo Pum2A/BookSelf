@@ -1,4 +1,4 @@
-"use client"; // Komponent kliencki
+"use client";
 
 import React from "react";
 import NavButton from "./reusableComponents/NavButton";
@@ -8,17 +8,43 @@ import { MdSupportAgent } from "react-icons/md";
 import { AiOutlineCalendar, AiOutlineHeart } from "react-icons/ai";
 import { FaHistory } from "react-icons/fa";
 import { useMenu } from "../contexts/MenuContext";
-import { SignOutButton } from "./SignOut";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
-function Sidebar() {
+function Sidebar({ isLoggedIn }: { isLoggedIn: boolean }) {
   const { menuOpen, toggleMenu } = useMenu();
+  const router = useRouter();
+
+  const handleSignIn = async () => {
+    router.push("/signin");
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        toast.success("Successfully signed out.");
+        router.push("/signin");
+        router.refresh();
+      } else {
+        toast.error("Failed to sign out. Please try again.");
+      }
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast.error("An error occurred while signing out.");
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen border-r-2 border-gray-700">
       {/* Sidebar */}
       <div
         className={`top-0 left-0 z-50 h-screen w-screen lg:w-64 bg-gray-800 p-6 transform transition-all duration-300 ease-in-out 
-        ${menuOpen ? "fixed" : "lg:block hidden"}`} // Pokazuje sidebar w wersji desktopowej i pełnoekranowy w mobilnej
+        ${menuOpen ? "fixed" : "lg:block hidden"}`} // Sidebar wyświetlany dynamicznie
       >
         {/* Logo */}
         <a href="/" className="text-2xl text-white font-semibold mb-8 block">
@@ -26,22 +52,24 @@ function Sidebar() {
         </a>
 
         {/* User Profile or Authentication */}
-        <div className="flex items-center gap-4 mb-8">
-          <img
-            src="/path-to-profile-pic.jpg"
-            alt="User Profile"
-            className="w-12 h-12 rounded-full border-2 border-gray-300"
-          />
-          <div>
-            <p className="text-lg text-white">John Doe</p>
-            <a
-              href="/profile"
-              className="text-sm text-gray-400 hover:text-white"
-            >
-              View Profile
-            </a>
+        {isLoggedIn && (
+          <div className="flex items-center gap-4 mb-8">
+            <img
+              src="/globe.svg"
+              alt="User Profile"
+              className="w-12 h-12 rounded-full border-2 border-gray-300"
+            />
+            <div>
+              <p className="text-lg text-white">John Doe</p>
+              <a
+                href="/profile"
+                className="text-sm text-gray-400 hover:text-white"
+              >
+                View Profile
+              </a>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Navigation Items */}
         <ul className="flex flex-col gap-5 w-full">
@@ -98,7 +126,18 @@ function Sidebar() {
               Support
             </div>
           </NavButton>
-          <SignOutButton></SignOutButton>
+
+          {/* Logout or Sign In Button */}
+          {isLoggedIn ? (
+            <Button
+              onClick={handleSignOut}
+              className="w-full mt-4 bg-red-500 text-white hover:bg-red-600 transition duration-200"
+            >
+              Logout
+            </Button>
+          ) : (
+            <Button onClick={handleSignIn}>Sign in</Button>
+          )}
         </ul>
       </div>
 
