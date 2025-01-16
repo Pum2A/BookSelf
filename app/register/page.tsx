@@ -1,31 +1,17 @@
-'use client';
-
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (res.ok) {
-      alert('Registration successful! You can now log in.');
-    } else {
-      alert('Registration failed!');
-    }
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-800">
       <div className="w-full max-w-md p-8 bg-gray-700 rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold text-center text-white mb-6">Register</h1>
-        <form onSubmit={handleRegister} className="space-y-4">
+        <h1 className="text-4xl font-bold text-center text-white mb-6">
+          Register
+        </h1>
+        <form className="space-y-4">
           <input
             type="email"
             placeholder="Email"

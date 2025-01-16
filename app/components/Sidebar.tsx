@@ -8,6 +8,7 @@ import { MdSupportAgent } from "react-icons/md";
 import { AiOutlineCalendar, AiOutlineHeart } from "react-icons/ai";
 import { FaHistory } from "react-icons/fa";
 import { useMenu } from "../contexts/MenuContext";
+import { SignOutButton } from "./SignOut";
 
 function Sidebar() {
   const { menuOpen, toggleMenu } = useMenu();
@@ -97,6 +98,7 @@ function Sidebar() {
               Support
             </div>
           </NavButton>
+          <SignOutButton></SignOutButton>
         </ul>
       </div>
 
