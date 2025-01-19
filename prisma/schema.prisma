@@ -12,5 +12,7 @@ model User {
   username  String   @unique
   email     String   @unique
   password  String
+  bio       String? // Opcjonalne pole
+  avatar    String? // Opcjonalne pole
   createdAt DateTime @default(now())
 }

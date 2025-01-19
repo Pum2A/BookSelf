@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { addUser } from "../services/users";
 
 const AddUserForm = () => {
   const [name, setName] = useState("");
@@ -9,6 +8,16 @@ const AddUserForm = () => {
     name: string;
     email: string;
   }
+
+  const addUser = async (user: { name: string; email: string }) => {
+    // Tymczasowa symulacja działania funkcji
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log("Dodano użytkownika:", user);
+        resolve(user); // Zwraca użytkownika po 1 sekundzie
+      }, 1000);
+    });
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

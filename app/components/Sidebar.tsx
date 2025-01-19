@@ -11,14 +11,17 @@ import { useMenu } from "../contexts/MenuContext";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { useUserStore } from "@/stores/userStore";
 
-function Sidebar({ isLoggedIn }: { isLoggedIn: boolean }) {
+function Sidebar({
+  isLoggedIn,
+  user,
+}: {
+  isLoggedIn: boolean;
+  user: { username: string } | null;
+}) {
   const { menuOpen, toggleMenu } = useMenu();
   const router = useRouter();
-
-  const handleSignIn = async () => {
-    router.push("/signin");
-  };
 
   const handleSignOut = async () => {
     try {
@@ -52,7 +55,7 @@ function Sidebar({ isLoggedIn }: { isLoggedIn: boolean }) {
         </a>
 
         {/* User Profile or Authentication */}
-        {isLoggedIn && (
+        {isLoggedIn && user && (
           <div className="flex items-center gap-4 mb-8">
             <img
               src="/globe.svg"
@@ -60,7 +63,7 @@ function Sidebar({ isLoggedIn }: { isLoggedIn: boolean }) {
               className="w-12 h-12 rounded-full border-2 border-gray-300"
             />
             <div>
-              <p className="text-lg text-white">John Doe</p>
+              <p className="text-lg text-white">{user.username}</p>
               <a
                 href="/profile"
                 className="text-sm text-gray-400 hover:text-white"
@@ -127,16 +130,14 @@ function Sidebar({ isLoggedIn }: { isLoggedIn: boolean }) {
             </div>
           </NavButton>
 
-          {/* Logout or Sign In Button */}
-          {isLoggedIn ? (
+          {/* Logout Button */}
+          {isLoggedIn && (
             <Button
               onClick={handleSignOut}
               className="w-full mt-4 bg-red-500 text-white hover:bg-red-600 transition duration-200"
             >
               Logout
             </Button>
-          ) : (
-            <Button onClick={handleSignIn}>Sign in</Button>
           )}
         </ul>
       </div>

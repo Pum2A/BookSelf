@@ -1,12 +1,12 @@
 import { Inter } from "next/font/google";
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import "./globals.css";
-import Footer from "./components/Footer";
 import { MenuProvider } from "./contexts/MenuContext";
 import Sidebar from "./components/Sidebar";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { cookies } from "next/headers"; // Importowanie ciasteczek
+import { cookies } from "next/headers";
+import { getUserFromToken } from "@/utils/GetUserFromToken";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,21 +20,23 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  // Pobranie danych z ciasteczek
+}) {
   const cookieStore = cookies();
-  const token = (await cookieStore).get("token"); // Zakładamy, że token znajduje się w ciasteczku o nazwie "authToken"
-  const isLoggedIn = Boolean(token); // Jeśli token istnieje, użytkownik jest zalogowany
+  const token = (await cookieStore).get("token")?.value; // Pobieramy wartość tokenu
+  let user = null;
+
+  if (token) {
+    user = await getUserFromToken(token); // Pobieramy użytkownika z tokenu
+  }
 
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className="font-sans">
         <div className="flex w-auto">
           <MenuProvider>
-            {/* Dynamiczne przekazanie stanu logowania */}
-            <Sidebar isLoggedIn={isLoggedIn} />
+            <Sidebar isLoggedIn={!!user} user={user} />
             <main className="flex-grow">{children}</main>
           </MenuProvider>
           <ToastContainer />

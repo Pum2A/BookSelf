@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcrypt';
 import prisma from '@/app/lib/prisma';
+import { SignJWT } from 'jose';
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +38,22 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ message: 'User created successfully', user });
+    // Generowanie JWT
+    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const jwt = await new SignJWT({ userId: user.id })
+      .setIssuedAt()
+      .setExpirationTime('1h')
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .sign(new TextEncoder().encode(secret));
+
+    // Zapisanie tokenu w ciasteczkach
+    const response = NextResponse.json({
+      message: 'User created successfully',
+      user,
+    });
+    response.cookies.set('token', jwt, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+
+    return response;
   } catch (error: any) {
     console.error("Error creating user:", error);
     return NextResponse.json(
