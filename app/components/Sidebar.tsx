@@ -18,7 +18,10 @@ function Sidebar({
   user,
 }: {
   isLoggedIn: boolean;
-  user: { username: string } | null;
+  user: {
+    avatar: string;
+    username: string;
+  } | null;
 }) {
   const { menuOpen, toggleMenu } = useMenu();
   const router = useRouter();
@@ -58,10 +61,11 @@ function Sidebar({
         {isLoggedIn && user && (
           <div className="flex items-center gap-4 mb-8">
             <img
-              src="/globe.svg"
+              src={user.avatar || "/default-avatar.png"}
               alt="User Profile"
-              className="w-12 h-12 rounded-full border-2 border-gray-300"
+              className="w-12 h-12 rounded-full border-2 border-gray-300 object-cover"
             />
+
             <div>
               <p className="text-lg text-white">{user.username}</p>
               <a

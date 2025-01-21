@@ -6,6 +6,7 @@ const secret = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function middleware(request: Request) {
   const token = (await cookies()).get('token')?.value;
+  console.log("Token from cookies:", token);
 
   if (!token) {
     return NextResponse.redirect(new URL('/signin', request.url));

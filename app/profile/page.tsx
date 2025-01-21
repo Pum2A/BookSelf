@@ -23,6 +23,9 @@ export default function Profile() {
     e.preventDefault();
     setLoading(true);
 
+    // Retrieve token from localStorage
+    const token = localStorage.getItem("token");
+
     // Walidacja, aby upewnić się, że wymagane pola są wypełnione
     if (!username || !bio) {
       toast.error("Please fill in all required fields.");
@@ -40,7 +43,10 @@ export default function Profile() {
     try {
       const response = await fetch("/api/profile", {
         method: "POST",
-        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`, // Przesyłanie tokenu w nagłówkach
+        },
+        body: formData, // Przesyłanie formData, nie JSON
       });
 
       if (response.ok) {
@@ -57,49 +63,69 @@ export default function Profile() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md w-full space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
-        <Input
-          id="username"
-          name="username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter your username"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="bio">Bio</Label>
-        <Textarea
-          id="bio"
-          name="bio"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="Write something about yourself"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="avatar">Avatar</Label>
-        <Input
-          id="avatar"
-          name="avatar"
-          type="file"
-          accept="image/*"
-          onChange={handleAvatarChange}
-        />
-      </div>
-
-      <Button
-        type="submit"
-        className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
-        disabled={loading}
+    <div className="flex justify-center items-center min-h-screen bg-gray-900">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-gray-800 p-8 rounded-lg shadow-lg space-y-6 w-full max-w-lg"
       >
-        {loading ? "Updating Profile..." : "Save Changes"}
-      </Button>
-    </form>
+        <h2 className="text-2xl font-semibold text-center text-white">
+          Edit Your Profile
+        </h2>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="username" className="text-white">
+              Username
+            </Label>
+            <Input
+              id="username"
+              name="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
+              required
+              className="mt-2 bg-gray-700 text-white border-0 focus:ring-2 focus:ring-green-400 rounded-md py-2 px-4 w-full"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="bio" className="text-white">
+              Bio
+            </Label>
+            <Textarea
+              id="bio"
+              name="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Write something about yourself"
+              className="mt-2 bg-gray-700 text-white border-0 focus:ring-2 focus:ring-green-400 rounded-md py-2 px-4 w-full"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="avatar" className="text-white">
+              Avatar
+            </Label>
+            <Input
+              id="avatar"
+              name="avatar"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="mt-2 bg-gray-700 text-white file:border-0 file:bg-green-400 file:text-white file:rounded-md hover:file:bg-green-500 focus:ring-2 focus:ring-green-400 w-full"
+            />
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full bg-green-400 text-white py-2 px-4 rounded-lg hover:bg-green-500 transition duration-200 disabled:bg-gray-500"
+          disabled={loading}
+        >
+          {loading ? "Updating Profile..." : "Save Changes"}
+        </Button>
+      </form>
+    </div>
   );
 }

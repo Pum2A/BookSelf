@@ -26,6 +26,7 @@ export default async function RootLayout({
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value; // Pobieramy wartość tokenu
   let user = null;
+  console.log("Token:", token);
 
   if (token) {
     user = await getUserFromToken(token); // Pobieramy użytkownika z tokenu
@@ -36,7 +37,10 @@ export default async function RootLayout({
       <body className="font-sans">
         <div className="flex w-auto">
           <MenuProvider>
-            <Sidebar isLoggedIn={!!user} user={user} />
+            <Sidebar
+              isLoggedIn={!!user}
+              user={user ? { ...user, avatar: user.avatar || "" } : null}
+            />
             <main className="flex-grow">{children}</main>
           </MenuProvider>
           <ToastContainer />
