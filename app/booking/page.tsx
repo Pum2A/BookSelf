@@ -1,13 +1,11 @@
 "use client";
 import React from "react";
-import AddUserForm from "../components/AddUserForm";
-import UsersList from "../components/UsersList";
+import BookingForm from "../components/forms/booking-form";
 
 function Booking() {
   return (
     <div>
-      <AddUserForm />
-      <UsersList />
+      <BookingForm></BookingForm>
     </div>
   );
 }

@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/app/lib/prisma';
-import jwt from 'jsonwebtoken';
-import * as cookie from 'cookie';
-import path from 'path';
-import { IncomingForm } from 'formidable';
-import { IncomingMessage } from 'http';
-import { Readable } from 'stream';
-import { promises as fs } from 'fs';
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/app/lib/prisma";
+import jwt from "jsonwebtoken";
+import * as cookie from "cookie";
+import path from "path";
+import { IncomingForm } from "formidable";
+import { IncomingMessage } from "http";
+import { Readable } from "stream";
+import { promises as fs } from "fs";
 
 export const config = {
   api: {
@@ -14,9 +14,9 @@ export const config = {
   },
 };
 
-const UPLOAD_DIR = path.join(process.cwd(), '/public/uploads');
+const UPLOAD_DIR = path.join(process.cwd(), "/public/uploads");
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 // Tworzy katalog, jeśli nie istnieje
 async function ensureUploadDirExists() {
@@ -38,8 +38,8 @@ async function parseForm(req: NextRequest) {
 
   const incomingMessage = Object.assign(stream as IncomingMessage, {
     headers: {
-      'content-type': req.headers.get('content-type') || '',
-      'content-length': buffer.length.toString(),
+      "content-type": req.headers.get("content-type") || "",
+      "content-length": buffer.length.toString(),
     },
     method: req.method,
     url: req.url,
@@ -55,18 +55,18 @@ async function parseForm(req: NextRequest) {
 
 // Weryfikuje token JWT i zwraca ID użytkownika
 function verifyToken(req: NextRequest): number {
-  const cookiesHeader = req.headers.get('cookie');
-  const cookies = cookie.parse(cookiesHeader || '');
+  const cookiesHeader = req.headers.get("cookie");
+  const cookies = cookie.parse(cookiesHeader || "");
   const token = cookies.token;
 
   if (!token) {
-    throw new Error('No token provided');
+    throw new Error("No token provided");
   }
 
   const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
 
   if (!decoded || !decoded.userId) {
-    throw new Error('Invalid token');
+    throw new Error("Invalid token");
   }
 
   return decoded.userId;
@@ -96,13 +96,13 @@ export async function POST(req: NextRequest) {
     const updatedUser = await updateUser(userId, username, bio, avatarPath);
 
     return NextResponse.json(
-      { message: 'Profile updated successfully', user: updatedUser },
+      { message: "Profile updated successfully", user: updatedUser },
       { status: 200 }
     );
   } catch (error: any) {
-    console.error('Error updating profile:', error.message);
+    console.error("Error updating profile:", error.message);
     return NextResponse.json(
-      { error: error.message || 'Failed to update profile' },
+      { error: error.message || "Failed to update profile" },
       { status: 500 }
     );
   }

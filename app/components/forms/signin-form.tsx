@@ -13,35 +13,17 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "react-toastify";
+import { useSigninUser } from "@/app/hooks/useAuth";
 
 export default function SigninForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { mutate, isPending } = useSigninUser(); // Używamy hooka
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    const response = await fetch("/api/auth/signin", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (response.ok) {
-      toast.success("Successfully signed in!");
-      router.push("/home");
-      router.refresh();
-    } else {
-      const errorData = await response.json();
-      toast.error(errorData.error || "Unable to log in. Please try again.");
-    }
-
-    setLoading(false);
+    mutate({ email, password }); // Uruchamiamy mutację
   };
 
   return (
@@ -85,9 +67,9 @@ export default function SigninForm() {
             <button
               type="submit"
               className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
-              disabled={loading}
+              disabled={isPending}
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {isPending ? "Signing In..." : "Sign In"}
             </button>
             <p className="text-center text-sm text-gray-500">
               Don't have an account?{" "}

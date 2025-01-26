@@ -1,17 +1,28 @@
 "use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-toastify";
+import { useUserStore } from "@/stores/userStore";
+import { useRouter } from "next/navigation"; // Importujemy useRouter
 
 export default function Profile() {
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
+  const { user, setUser } = useUserStore();
+  const [username, setUsername] = useState(user?.username || "");
+  const [bio, setBio] = useState(user?.bio || "");
   const [avatar, setAvatar] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter(); // Hook do przekierowania
+
+  // Ustawienie początkowych wartości z user w store
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username);
+      setBio(user.bio || "");
+    }
+  }, [user]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -23,10 +34,6 @@ export default function Profile() {
     e.preventDefault();
     setLoading(true);
 
-    // Retrieve token from localStorage
-    const token = localStorage.getItem("token");
-
-    // Walidacja, aby upewnić się, że wymagane pola są wypełnione
     if (!username || !bio) {
       toast.error("Please fill in all required fields.");
       setLoading(false);
@@ -43,14 +50,17 @@ export default function Profile() {
     try {
       const response = await fetch("/api/profile", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`, // Przesyłanie tokenu w nagłówkach
-        },
-        body: formData, // Przesyłanie formData, nie JSON
+        body: formData,
       });
 
       if (response.ok) {
         toast.success("Profile updated successfully!");
+        const updatedUser = await response.json();
+        setUser(updatedUser.user); // Zaktualizowanie stanu w Zustand po pomyślnym zapisie
+
+        // Przekierowanie na stronę główną i odświeżenie danych
+        router.push("/home");
+        router.refresh(); // Odświeżenie strony, aby dane były widoczne
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || "Failed to update profile.");

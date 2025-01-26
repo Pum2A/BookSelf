@@ -7,6 +7,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { cookies } from "next/headers";
 import { getUserFromToken } from "@/utils/GetUserFromToken";
+import QueryProvider from "./contexts/QueryProvider";
+import { BookingProvider } from "./contexts/BookingContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,26 +27,41 @@ export default async function RootLayout({
 }) {
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value; // Pobieramy wartość tokenu
-  let user = null;
-  console.log("Token:", token);
 
+  let user = null;
   if (token) {
-    user = await getUserFromToken(token); // Pobieramy użytkownika z tokenu
+    try {
+      user = await getUserFromToken(token); // Pobieramy użytkownika z tokenu
+    } catch (error) {
+      console.error("Error fetching user from token:", error);
+    }
   }
 
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className="font-sans">
-        <div className="flex w-auto">
-          <MenuProvider>
-            <Sidebar
-              isLoggedIn={!!user}
-              user={user ? { ...user, avatar: user.avatar || "" } : null}
-            />
-            <main className="flex-grow">{children}</main>
-          </MenuProvider>
-          <ToastContainer />
-        </div>
+        <QueryProvider>
+          <BookingProvider>
+            <div className="flex w-auto">
+              <MenuProvider>
+                <Sidebar
+                  isLoggedIn={!!user} // Przekazujemy informację, czy użytkownik jest zalogowany
+                  userData={
+                    user
+                      ? {
+                          username: user.username,
+                          avatar: user.avatar || "/default-avatar.png",
+                        }
+                      : null
+                  }
+                />
+
+                <main className="flex-grow">{children}</main>
+              </MenuProvider>
+              <ToastContainer />
+            </div>
+          </BookingProvider>
+        </QueryProvider>
       </body>
     </html>
   );

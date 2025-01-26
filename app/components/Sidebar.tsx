@@ -15,16 +15,17 @@ import { useUserStore } from "@/stores/userStore";
 
 function Sidebar({
   isLoggedIn,
-  user,
+  userData, // Zmieniamy nazwę zmiennej na userData
 }: {
   isLoggedIn: boolean;
-  user: {
+  userData: {
     avatar: string;
     username: string;
   } | null;
 }) {
   const { menuOpen, toggleMenu } = useMenu();
   const router = useRouter();
+  const { user } = useUserStore(); // Pobieranie użytkownika z Zustand
 
   const handleSignOut = async () => {
     try {
@@ -48,26 +49,23 @@ function Sidebar({
   return (
     <div className="relative flex min-h-screen border-r-2 border-gray-700">
       {/* Sidebar */}
-      <div
-        className={`top-0 left-0 z-50 h-screen w-screen lg:w-64 bg-gray-800 p-6 transform transition-all duration-300 ease-in-out 
-        ${menuOpen ? "fixed" : "lg:block hidden"}`} // Sidebar wyświetlany dynamicznie
-      >
+      <div className="top-0 left-0 z-50 h-screen w-screen lg:w-64 bg-gray-800 p-6">
         {/* Logo */}
         <a href="/" className="text-2xl text-white font-semibold mb-8 block">
           <span className="text-green-400">BOOK</span>SELF
         </a>
 
         {/* User Profile or Authentication */}
-        {isLoggedIn && user && (
+        {userData && (
           <div className="flex items-center gap-4 mb-8">
             <img
-              src={user.avatar || "/default-avatar.png"}
+              src={userData.avatar || "/default-avatar.png"}
               alt="User Profile"
               className="w-12 h-12 rounded-full border-2 border-gray-300 object-cover"
             />
 
             <div>
-              <p className="text-lg text-white">{user.username}</p>
+              <p className="text-lg text-white">{userData.username}</p>
               <a
                 href="/profile"
                 className="text-sm text-gray-400 hover:text-white"

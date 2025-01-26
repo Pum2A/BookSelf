@@ -12,38 +12,19 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { useSignupUser } from "@/app/hooks/useAuth";
 import { toast } from "react-toastify";
 
 export default function SignUpForm() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { mutate, isPending } = useSignupUser(); // Używamy hooka
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, username, password }),
-    });
-
-    if (response.ok) {
-      toast.success("Account created successfully!");
-      router.push("/signin"); // Przekierowanie na stronę logowania
-    } else {
-      const errorData = await response.json();
-      toast.error(
-        errorData.error || "Failed to create account. Please try again."
-      );
-    }
-
-    setLoading(false);
+    mutate({ email, username, password }); // Uruchamiamy mutację
   };
 
   return (
@@ -100,9 +81,9 @@ export default function SignUpForm() {
             <button
               type="submit"
               className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-200 disabled:bg-green-300"
-              disabled={loading}
+              disabled={isPending}
             >
-              {loading ? "Creating Account..." : "Sign Up"}
+              {isPending ? "Creating Account..." : "Sign Up"}
             </button>
             <p className="text-center text-sm text-gray-500">
               Already have an account?{" "}

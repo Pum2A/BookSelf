@@ -14,6 +14,7 @@
     "@prisma/client": "^6.2.1",
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.1",
+    "@tanstack/react-query": "^5.64.2",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
