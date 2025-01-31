@@ -6,7 +6,11 @@ export async function POST() {
   try {
     // Usuwamy token z ciasteczek
     const response = NextResponse.json({ message: 'Successfully signed out' }, { status: 200 });
-    response.cookies.delete('token'); // Usuwamy token
+    response.cookies.delete({
+      name: 'token',
+      path: '/',
+      sameSite: 'strict'
+    });
 
     // Zwracamy odpowiedź, że użytkownik został wylogowany
     return response;

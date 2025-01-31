@@ -12,7 +12,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { useSignupUser } from "@/app/hooks/useAuth";
+import { useSignupUser } from "@/hooks/useAuth";
 import { toast } from "react-toastify";
 
 export default function SignUpForm() {

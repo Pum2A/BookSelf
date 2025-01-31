@@ -8,11 +8,37 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String    @unique
   password  String
   bio       String? // Opcjonalne pole
   avatar    String? // Opcjonalne pole
+  role      String    @default("customer") // "customer" lub "owner"
+  services  Service[] // Usługi oferowane przez właściciela
+  bookings  Booking[] // Rezerwacje dokonane przez użytkownika
+  createdAt DateTime  @default(now())
+}
+
+model Service {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  ownerId     Int // ID właściciela usługi
+  owner       User      @relation(fields: [ownerId], references: [id])
+  bookings    Booking[] // Rezerwacje dla tej usługi
+  createdAt   DateTime  @default(now())
+}
+
+model Booking {
+  id        Int      @id @default(autoincrement())
+  serviceId Int // ID usługi
+  userId    Int // ID użytkownika dokonującego rezerwacji
+  date      DateTime // Data rezerwacji
+  time      DateTime // Czas rezerwacji
+  status    String   @default("pending") // "pending", "confirmed", "cancelled"
+  service   Service  @relation(fields: [serviceId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 }
