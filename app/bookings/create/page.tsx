@@ -26,10 +26,31 @@ export default function CreateBookingPage() {
       setError(data.error || "Failed to create booking");
     }
   };
+  const handleBecomeOwner = async () => {
+    try {
+      const res = await fetch("/api/user/update-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newRole: "owner" }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Nie udało się zmienić roli");
+        return;
+      }
+      // Można odświeżyć sesję lub użytkownika, aby nowe dane były dostępne
+      router.push("/services/create-form"); // lub przekierowanie do formularza tworzenia usługi
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
 
   return (
     <div>
       <h1>Create Booking</h1>
+      <button onClick={handleBecomeOwner}>Kliknij aby zostać twórcą</button>
+
       <form onSubmit={handleSubmit}>
         <input
           type="text"

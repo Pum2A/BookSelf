@@ -1,33 +1,104 @@
-// app/services/[id]/page.tsx
 "use client";
-import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function ServiceDetailPage() {
-  const { id } = useParams();
-  const router = useRouter();
+export default function ServiceDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const [service, setService] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const [bookingData, setBookingData] = useState({
+    date: "",
+    time: "",
+    details: "",
+  });
 
   useEffect(() => {
-    fetch(`/api/services/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setService(data);
-        setLoading(false);
-      })
-      .catch((error) => console.error("Error fetching service:", error));
-  }, [id]);
+    const fetchService = async () => {
+      try {
+        const res = await fetch(`/api/services/${params.id}`);
+        const data = await res.json();
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setService(data);
+        }
+      } catch (err) {
+        setError("Błąd podczas pobierania usługi");
+      }
+    };
 
-  if (loading) return <p>Loading service...</p>;
-  if (!service) return <p>Service not found</p>;
+    fetchService();
+  }, [params.id]);
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const res = await fetch("/api/bookings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          serviceId: params.id,
+          date: bookingData.date,
+          time: bookingData.time,
+          details: bookingData.details,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        router.push("/bookings");
+      } else {
+        setError(data.error || "Nie udało się stworzyć rezerwacji");
+      }
+    } catch (err: any) {
+      setError("Błąd podczas tworzenia rezerwacji");
+    }
+  };
 
   return (
     <div>
-      <h1>{service.name}</h1>
-      <p>{service.description}</p>
-      <p>${service.price}</p>
-      <button onClick={() => router.push(`/services/${id}/edit`)}>Edit</button>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {service ? (
+        <>
+          <h1>{service.name}</h1>
+          <p>{service.description}</p>
+          {/* Tutaj możesz dodać więcej szczegółów usługi */}
+          <h2>Rezerwuj usługę</h2>
+          <form onSubmit={handleBookingSubmit}>
+            <input
+              type="date"
+              value={bookingData.date}
+              onChange={(e) =>
+                setBookingData({ ...bookingData, date: e.target.value })
+              }
+              required
+            />
+            <input
+              type="time"
+              value={bookingData.time}
+              onChange={(e) =>
+                setBookingData({ ...bookingData, time: e.target.value })
+              }
+              required
+            />
+            <input
+              type="text"
+              placeholder="Szczegóły (np. rodzaj kebaba)"
+              value={bookingData.details}
+              onChange={(e) =>
+                setBookingData({ ...bookingData, details: e.target.value })
+              }
+            />
+            <button type="submit">Rezerwuj</button>
+          </form>
+        </>
+      ) : (
+        <p>Ładowanie usługi...</p>
+      )}
     </div>
   );
 }
