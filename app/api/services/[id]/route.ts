@@ -3,7 +3,8 @@ import prisma from '@/app/lib/prisma';
 import { getCurrentUser } from '@/app/lib/auth';
 
 // GET - pobiera usługę o danym ID
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   // Walidacja parametru - upewniamy się, że jest liczbą
   const serviceId = parseInt(params.id, 10);
   if (isNaN(serviceId)) {
@@ -31,7 +32,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // PUT - aktualizuje usługę
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   // Walidacja parametru
   const serviceId = parseInt(params.id, 10);
   if (isNaN(serviceId)) {
@@ -71,7 +73,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE - usuwa usługę
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   // Walidacja parametru
   const serviceId = parseInt(params.id, 10);
   if (isNaN(serviceId)) {

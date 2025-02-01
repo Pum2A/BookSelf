@@ -1,41 +1,32 @@
-// app/firms/[id]/page.tsx
 "use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Category } from "@prisma/client";
+import React from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 
-interface Firm {
-  id: number;
-  name: string;
-  categories: Category[];
-}
-
-interface Category {
-  id: number;
-  name: string;
-}
-
-export default function FirmDetailPage() {
-  const { id } = useParams();
-  const router = useRouter();
-  const [firm, setFirm] = useState<Firm | null>(null);
+export default function FirmDetailPage({ params }: { params: { id: string } }) {
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Access params directly
+  const firmId = params.id;
 
   useEffect(() => {
-    const fetchFirm = async () => {
+    const fetchCategories = async () => {
       try {
-        const response = await fetch(`/api/firms/${id}`);
-        if (!response.ok) throw new Error("Failed to fetch firm");
+        const response = await fetch(`/api/firms/${firmId}/categories`);
+        if (!response.ok) throw new Error("Failed to fetch categories");
         const data = await response.json();
-        setFirm(data);
+        setCategories(data);
       } catch (error) {
-        toast.error("Error loading firm");
+        toast.error("Error loading categories");
       }
     };
-    fetchFirm();
-  }, [id]);
 
+    if (firmId) fetchCategories(); // Pobierz kategorie tylko jeśli firmId jest dostępny
+  }, [firmId]);
+
+  // Dodawanie nowej kategorii
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -46,22 +37,14 @@ export default function FirmDetailPage() {
         },
         body: JSON.stringify({
           name: newCategoryName,
-          firmId: id,
+          firmId: firmId, // Przesyłamy firmId jako liczbę
         }),
       });
 
       if (!response.ok) throw new Error("Failed to add category");
 
       const newCategory = await response.json();
-      setFirm((prev) =>
-        prev
-          ? {
-              ...prev,
-              categories: [...prev.categories, newCategory.category],
-            }
-          : null
-      );
-
+      setCategories([...categories, newCategory.category]);
       setNewCategoryName("");
       toast.success("Category added!");
     } catch (error) {
@@ -69,45 +52,84 @@ export default function FirmDetailPage() {
     }
   };
 
-  if (!firm) return <div>Loading...</div>;
+  // Edytowanie kategorii
+  const handleEditCategory = async (id: number, newName: string) => {
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update category");
+
+      const updatedCategory = await response.json();
+      setCategories(
+        categories.map((category) =>
+          category.id === id ? updatedCategory : category
+        )
+      );
+      toast.success("Category updated!");
+    } catch (error) {
+      toast.error("Error updating category");
+    }
+  };
+
+  // Usuwanie kategorii
+  const handleDeleteCategory = async (id: number) => {
+    try {
+      const response = await fetch(`/api/categories/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete category");
+
+      setCategories(categories.filter((category) => category.id !== id));
+      toast.success("Category deleted!");
+    } catch (error) {
+      toast.error("Error deleting category");
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto mt-8">
-      <h1 className="text-3xl font-bold mb-6">{firm.name}</h1>
+    <div>
+      {/* Formularz do dodawania kategorii */}
+      <form onSubmit={handleAddCategory}>
+        <input
+          type="text"
+          value={newCategoryName}
+          onChange={(e) => setNewCategoryName(e.target.value)}
+          placeholder="Add a new category"
+          required
+        />
+        <button type="submit">Add Category</button>
+      </form>
 
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Add New Category</h2>
-        <form onSubmit={handleAddCategory} className="flex gap-4">
-          <input
-            type="text"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            className="flex-1 p-2 border rounded"
-            placeholder="Category name"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-          >
-            Add Category
-          </button>
-        </form>
-      </div>
-
+      {/* Lista kategorii */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Categories</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {firm.categories.map((category) => (
-            <div
-              key={category.id}
-              className="p-4 border rounded hover:bg-gray-50 cursor-pointer"
-              onClick={() => router.push(`/categories/${category.id}`)}
+        <h3>Categories</h3>
+        {categories.map((category) => (
+          <div key={category.id}>
+            <h4>{category.name}</h4>
+
+            {/* Edycja kategorii */}
+            <button
+              onClick={() => {
+                const newName = prompt("New name for category", category.name);
+                if (newName) handleEditCategory(category.id, newName);
+              }}
             >
-              <h3 className="text-lg font-medium">{category.name}</h3>
-            </div>
-          ))}
-        </div>
+              Edit
+            </button>
+
+            {/* Usuwanie kategorii */}
+            <button onClick={() => handleDeleteCategory(category.id)}>
+              Delete
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

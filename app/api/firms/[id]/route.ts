@@ -6,7 +6,7 @@ interface Params {
 }
 
 interface RequestParams {
-    params: Params;
+    params: Promise<Params>;
 }
 
 interface Firm {
@@ -15,10 +15,8 @@ interface Firm {
     // Add other firm properties as needed
 }
 
-export async function GET(
-    request: Request,
-    { params }: RequestParams
-): Promise<NextResponse> {
+export async function GET(request: Request, props: RequestParams): Promise<NextResponse> {
+    const params = await props.params;
     try {
         const { id } = params;
         

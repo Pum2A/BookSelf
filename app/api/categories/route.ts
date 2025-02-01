@@ -1,17 +1,9 @@
+// app/api/categories/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
-import { getCurrentUser } from '@/app/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'owner') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Only owners can create categories.' },
-        { status: 403 }
-      );
-    }
-
     const { name, firmId } = await request.json();
     if (!name || !firmId) {
       return NextResponse.json(

@@ -1,12 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ServiceDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ServiceDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = use(props.params);
   const [service, setService] = useState<any>(null);
   const [error, setError] = useState("");
   const router = useRouter();

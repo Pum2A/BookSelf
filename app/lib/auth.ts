@@ -14,7 +14,7 @@ if (!JWT_SECRET) {
  * @throws Error if the token is invalid, expired, or the user is not found.
  */
 export async function getCurrentUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = (await cookieStore).get('token')?.value;
 
   if (!token) {

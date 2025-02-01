@@ -25,7 +25,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = (await cookieStore).get("token")?.value; // Pobieramy wartość tokenu
 
   let user = null;
