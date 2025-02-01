@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useUserStore } from "@/stores/userStore";
+import { FiShield } from "react-icons/fi"; // Nowa ikona dla właściciela
 
 function Sidebar({
   isLoggedIn,
@@ -21,11 +22,35 @@ function Sidebar({
   userData: {
     avatar: string;
     username: string;
+    role?: string;
   } | null;
 }) {
   const { menuOpen, toggleMenu } = useMenu();
   const router = useRouter();
   const { user } = useUserStore(); // Pobieranie użytkownika z Zustand
+
+  const handleBecomeOwner = async () => {
+    try {
+      const response = await fetch("/api/users/become-owner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user?.id }),
+      });
+
+      if (response.ok) {
+        toast.success("You are now an owner!");
+        useUserStore.getState().updateUserRole("owner");
+        router.refresh();
+      } else {
+        toast.error("Failed to upgrade account");
+      }
+    } catch (error) {
+      console.error("Become owner error:", error);
+      toast.error("Error upgrading account");
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -45,6 +70,36 @@ function Sidebar({
       toast.error("An error occurred while signing out.");
     }
   };
+
+  const ownerSection = (
+    <ul className="flex flex-col gap-5 w-full mt-6">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        Account
+      </h3>
+
+      {user?.role !== "owner" && (
+        <Button
+          onClick={handleBecomeOwner}
+          className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+          variant="ghost"
+        >
+          <div className="flex items-center gap-2">
+            <FiShield className="mr-2" />
+            Become Owner
+          </div>
+        </Button>
+      )}
+
+      {user?.role === "owner" && (
+        <NavButton href="/owner-dashboard" isMobile>
+          <div className="flex items-center gap-4">
+            <FiShield size={22} className="text-gray-700" />
+            Owner Dashboard
+          </div>
+        </NavButton>
+      )}
+    </ul>
+  );
 
   return (
     <div className="relative flex min-h-screen border-r-2 border-gray-700">
@@ -131,6 +186,8 @@ function Sidebar({
               Support
             </div>
           </NavButton>
+
+          {isLoggedIn && ownerSection}
 
           {/* Logout Button */}
           {isLoggedIn && (

@@ -16,29 +16,39 @@ model User {
   avatar    String? // Opcjonalne pole
   role      String    @default("customer") // "customer" lub "owner"
   services  Service[] // Usługi oferowane przez właściciela
-  bookings  Booking[] // Rezerwacje dokonane przez użytkownika
   createdAt DateTime  @default(now())
+  Firm      Firm[]
+}
+
+model Firm {
+  id         Int        @id @default(autoincrement())
+  name       String
+  ownerId    Int
+  owner      User       @relation(fields: [ownerId], references: [id])
+  categories Category[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  firmId    Int
+  firm      Firm      @relation(fields: [firmId], references: [id])
+  services  Service[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Service {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String
   price       Float
-  ownerId     Int // ID właściciela usługi
-  owner       User      @relation(fields: [ownerId], references: [id])
-  bookings    Booking[] // Rezerwacje dla tej usługi
-  createdAt   DateTime  @default(now())
-}
-
-model Booking {
-  id        Int      @id @default(autoincrement())
-  serviceId Int // ID usługi
-  userId    Int // ID użytkownika dokonującego rezerwacji
-  date      DateTime // Data rezerwacji
-  time      DateTime // Czas rezerwacji
-  status    String   @default("pending") // "pending", "confirmed", "cancelled"
-  service   Service  @relation(fields: [serviceId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  ownerId     Int
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
