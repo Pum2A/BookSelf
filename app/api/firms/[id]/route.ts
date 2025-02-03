@@ -1,38 +1,49 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/app/lib/prisma';
+// pages/api/firms/[id]/route.ts
 
-interface Params {
-    id: string;
-}
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { PrismaClient } from '@prisma/client';
 
-interface RequestParams {
-    params: Promise<Params>;
-}
+const prisma = new PrismaClient();
 
-interface Firm {
-    id: number;
-    categories: any[]; // You may want to define a proper Category interface
-    // Add other firm properties as needed
-}
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { id } = req.query;
 
-export async function GET(request: Request, props: RequestParams): Promise<NextResponse> {
-    const params = await props.params;
-    try {
-        const { id } = params;
-        
-        // Pobieramy firmę z kategoriami na podstawie ID
-        const firm = await prisma.firm.findUnique({
-            where: { id: parseInt(id) },
-            include: { categories: true }, // Dołączamy kategorie
-        }) as Firm | null;
-
-        if (!firm) {
-            return NextResponse.json({ error: 'Firm not found' }, { status: 404 });
-        }
-
-        return NextResponse.json(firm, { status: 200 });
-    } catch (error) {
-        console.error('Error fetching firm:', error);
-        return NextResponse.json({ error: 'Failed to fetch firm' }, { status: 500 });
+  if (req.method === 'GET') {
+    const firm = await prisma.firm.findUnique({
+      where: { id: Number(id) },
+    });
+    if (firm) {
+      res.status(200).json(firm);
+    } else {
+      res.status(404).json({ message: 'Firma nie znaleziona' });
     }
+  } else if (req.method === 'PUT') {
+    const { name, description, location, openingHours } = req.body;
+
+    try {
+      const updatedFirm = await prisma.firm.update({
+        where: { id: Number(id) },
+        data: {
+          name,
+          description,
+          location,
+          openingHours,
+        },
+      });
+      res.status(200).json(updatedFirm);
+    } catch (error) {
+      res.status(400).json({ message: 'Nie udało się zaktualizować firmy', error });
+    }
+  } else if (req.method === 'DELETE') {
+    try {
+      await prisma.firm.delete({
+        where: { id: Number(id) },
+      });
+      res.status(204).end();
+    } catch (error) {
+      res.status(400).json({ message: 'Nie udało się usunąć firmy', error });
+    }
+  } else {
+    res.status(405).json({ message: 'Metoda niedozwolona' });
+  }
 }

@@ -1,61 +1,105 @@
-// app/firms/create/page.tsx
+// firms/create/page.tsx
 "use client";
 
-import { useState } from "react";
+import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
 
 export default function CreateFirmPage() {
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [newFirm, setNewFirm] = useState({
+    name: "",
+    description: "",
+    location: "",
+    openingHours: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  // W rzeczywistości pobierz id właściciela z kontekstu autoryzacji lub sesji
+  const loggedOwnerId = 1;
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      const response = await fetch("/api/firms", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name }),
-      });
+    const payload = {
+      ...newFirm,
+      ownerId: loggedOwnerId,
+    };
 
-      if (!response.ok) throw new Error("Failed to create firm");
+    const response = await fetch("/api/firms", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-      const data = await response.json();
-      router.push(`/firms/${data.firm.id}`);
-      toast.success("Firm created!");
-    } catch (error) {
-      toast.error("Error creating firm");
-    } finally {
-      setLoading(false);
+    if (response.ok) {
+      const createdFirm = await response.json();
+      alert("Firma została utworzona");
+      // Przekierowanie do szczegółów utworzonej firmy lub listy
+      router.push(`/firms/${createdFirm.id}`);
+    } else {
+      const errorData = await response.json();
+      setError(errorData.message || "Błąd tworzenia firmy");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8">
-      <h1 className="text-2xl font-bold mb-4">Create New Firm</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div style={{ padding: "2rem" }}>
+      <h1>Utwórz nową firmę</h1>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
         <div>
-          <label className="block mb-2">Firm Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
+          <label>
+            Nazwa:
+            <input
+              type="text"
+              value={newFirm.name}
+              onChange={(e) => setNewFirm({ ...newFirm, name: e.target.value })}
+              required
+            />
+          </label>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? "Creating..." : "Create Firm"}
-        </button>
+        <div>
+          <label>
+            Opis:
+            <textarea
+              value={newFirm.description}
+              onChange={(e) =>
+                setNewFirm({ ...newFirm, description: e.target.value })
+              }
+              required
+            ></textarea>
+          </label>
+        </div>
+        <div>
+          <label>
+            Lokalizacja:
+            <input
+              type="text"
+              value={newFirm.location}
+              onChange={(e) =>
+                setNewFirm({ ...newFirm, location: e.target.value })
+              }
+              required
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            Godziny otwarcia:
+            <input
+              type="text"
+              value={newFirm.openingHours}
+              onChange={(e) =>
+                setNewFirm({ ...newFirm, openingHours: e.target.value })
+              }
+              required
+            />
+          </label>
+        </div>
+        <button type="submit">Utwórz firmę</button>
       </form>
     </div>
   );

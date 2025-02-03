@@ -8,7 +8,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { cookies } from "next/headers";
 import { getUserFromToken } from "@/utils/GetUserFromToken";
 import QueryProvider from "./contexts/QueryProvider";
-import { BookingProvider } from "./contexts/BookingContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,26 +40,24 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className="font-sans">
         <QueryProvider>
-          <BookingProvider>
-            <div className="flex w-auto">
-              <MenuProvider>
-                <Sidebar
-                  isLoggedIn={!!user} // Przekazujemy informację, czy użytkownik jest zalogowany
-                  userData={
-                    user
-                      ? {
-                          username: user.username,
-                          avatar: user.avatar || "/default-avatar.png",
-                        }
-                      : null
-                  }
-                />
+          <div className="flex w-auto">
+            <MenuProvider>
+              <Sidebar
+                isLoggedIn={!!user} // Przekazujemy informację, czy użytkownik jest zalogowany
+                userData={
+                  user
+                    ? {
+                        username: user.username,
+                        avatar: user.avatar || "/default-avatar.png",
+                      }
+                    : null
+                }
+              />
 
-                <main className="flex-grow">{children}</main>
-              </MenuProvider>
-              <ToastContainer />
-            </div>
-          </BookingProvider>
+              <main className="flex-grow">{children}</main>
+            </MenuProvider>
+            <ToastContainer />
+          </div>
         </QueryProvider>
       </body>
     </html>

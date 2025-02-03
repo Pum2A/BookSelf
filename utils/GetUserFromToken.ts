@@ -1,24 +1,31 @@
 import jwt from "jsonwebtoken";
 import prisma from "@/app/lib/prisma";
-
 export async function getUserFromToken(token: string) {
   try {
-    const secret = process.env.JWT_SECRET || "your-secret-key";
-    console.log('Verifying token:', token);  // Log tokenu przed weryfikacją
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error("JWT_SECRET is missing in .env!");
+      return null;
+    }
+
+    console.log("Verifying token:", token);
     const decoded = jwt.verify(token, secret) as { userId: number };
-    
-    console.log('Decoded token:', decoded); // Log dekodowanego tokenu
+
+    console.log("Decoded token:", decoded);
 
     if (!decoded || !decoded.userId) {
-      throw new Error('Invalid token');
+      throw new Error("Invalid token: missing userId");
     }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
     });
 
-    console.log('Found user:', user); // Log użytkownika
+    if (!user) {
+      throw new Error(`User with ID ${decoded.userId} not found`);
+    }
 
+    console.log("Found user:", user);
     return user;
   } catch (error) {
     console.error("Token verification failed:", error);

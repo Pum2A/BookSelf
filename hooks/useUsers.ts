@@ -5,11 +5,16 @@ const API_URL = "/api/users";
 
 // Hook do pobierania użytkowników
 export function useGetUsers() {
-  return useQuery({ queryKey: ["users"], queryFn: async () => {
-    const { data } = await axios.get(API_URL);
-    return data;
-  }});
+  return useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const { data } = await axios.get(API_URL);
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // Cache na 5 minut
+  });
 }
+
 
 // Hook do dodawania użytkownika
 export function useAddUser() {
