@@ -1,12 +1,15 @@
+// Źródło bazy danych, domyślnie PostgreSQL
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL") // Pobierane ze zmiennych środowiskowych
 }
 
+// Generator klienta Prisma
 generator client {
   provider = "prisma-client-js"
 }
 
+// Model użytkownika
 model User {
   id        Int       @id @default(autoincrement())
   username  String    @unique
@@ -22,12 +25,14 @@ model User {
   reviews   Review[]  @relation("UserReviews")
 }
 
+// Model firmy
 model Firm {
   id           Int        @id @default(autoincrement())
   name         String
   description  String
   location     String
   openingHours String
+  address      String // Nowe pole 'address'
   ownerId      Int
   owner        User       @relation("UserFirms", fields: [ownerId], references: [id])
   menuItems    MenuItem[] @relation("FirmMenuItems")
@@ -37,6 +42,7 @@ model Firm {
   updatedAt    DateTime   @updatedAt
 }
 
+// Model pozycji menu
 model MenuItem {
   id          Int    @id @default(autoincrement())
   name        String
@@ -47,6 +53,7 @@ model MenuItem {
   firm        Firm   @relation("FirmMenuItems", fields: [firmId], references: [id])
 }
 
+// Model rezerwacji
 model Booking {
   id             Int           @id @default(autoincrement())
   bookingTime    DateTime
@@ -60,6 +67,7 @@ model Booking {
   updatedAt      DateTime      @updatedAt
 }
 
+// Model recenzji
 model Review {
   id         Int      @id @default(autoincrement())
   rating     Int
@@ -72,12 +80,14 @@ model Review {
   updatedAt  DateTime @updatedAt
 }
 
+// Enum dla ról użytkowników
 enum UserRole {
   CUSTOMER
   OWNER
   ADMIN
 }
 
+// Enum dla statusu rezerwacji
 enum BookingStatus {
   PENDING
   CONFIRMED

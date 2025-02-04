@@ -7,7 +7,7 @@ import { AiFillHome, AiOutlineInfoCircle, AiOutlineUser } from "react-icons/ai";
 import { MdSupportAgent } from "react-icons/md";
 import { AiOutlineCalendar, AiOutlineHeart } from "react-icons/ai";
 import { FaHistory } from "react-icons/fa";
-import { useMenu } from "../contexts/MenuContext";
+import { useMenu } from "../(root)/contexts/MenuContext";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";

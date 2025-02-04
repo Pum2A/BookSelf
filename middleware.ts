@@ -1,25 +1,25 @@
-import { NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-const secret = process.env.JWT_SECRET || 'your-secret-key'; 
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "default_secret_key");
 
-export async function middleware(request: Request) {
-  const token = (await cookies()).get('token')?.value;
-  console.log("Token from cookies:", token);
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get("token")?.value;
 
   if (!token) {
-    return NextResponse.redirect(new URL('/signin', request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret));
-    return NextResponse.next(); // Jeśli token jest ważny, przejdź do strony
+    await jwtVerify(token, secret);
+    return NextResponse.next();
   } catch (error) {
-    return NextResponse.redirect(new URL('/signin', request.url));
+    console.error("🔴 Nieprawidłowy token:", error);
+    return NextResponse.redirect(new URL("/signin", request.url));
   }
 }
 
 export const config = {
-  matcher: ['/home', '/about', '/booking', '/history', '/favorites', '/support'],
+  matcher: ["/home/:path*", "/firms/:path*"], // 🔹 Strony wymagające logowania
 };

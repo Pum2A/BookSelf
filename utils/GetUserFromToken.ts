@@ -1,5 +1,7 @@
+// utils/GetUserFromToken.ts
 import jwt from "jsonwebtoken";
 import prisma from "@/app/lib/prisma";
+
 export async function getUserFromToken(token: string) {
   try {
     const secret = process.env.JWT_SECRET;
@@ -26,7 +28,15 @@ export async function getUserFromToken(token: string) {
     }
 
     console.log("Found user:", user);
-    return user;
+
+    // Zamieniamy null na undefined dla bio i avatar (jeśli null)
+    const mappedUser = {
+      ...user,
+      bio: user.bio === null ? undefined : user.bio,
+      avatar: user.avatar === null ? undefined : user.avatar,
+    };
+
+    return mappedUser;
   } catch (error) {
     console.error("Token verification failed:", error);
     return null;

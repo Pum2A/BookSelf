@@ -1,46 +1,45 @@
-// firms/create/page.tsx
 "use client";
 
 import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/stores/userStore";
 
 export default function CreateFirmPage() {
   const router = useRouter();
+  const { user } = useUserStore();
 
   const [newFirm, setNewFirm] = useState({
     name: "",
     description: "",
     location: "",
     openingHours: "",
+    address: "", // Dodajemy pole address
   });
   const [error, setError] = useState<string | null>(null);
-
-  // W rzeczywistości pobierz id właściciela z kontekstu autoryzacji lub sesji
-  const loggedOwnerId = 1;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    const payload = {
-      ...newFirm,
-      ownerId: loggedOwnerId,
-    };
+    if (!user) {
+      setError("Musisz być zalogowany, aby dodać firmę.");
+      return;
+    }
 
     const response = await fetch("/api/firms", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      credentials: "include",
+      body: JSON.stringify({ ...newFirm, ownerId: user.id }), // Teraz ownerId jest przekazywane
+      headers: { "Content-Type": "application/json" },
     });
 
     if (response.ok) {
       const createdFirm = await response.json();
       alert("Firma została utworzona");
-      // Przekierowanie do szczegółów utworzonej firmy lub listy
       router.push(`/firms/${createdFirm.id}`);
     } else {
-      const errorData = await response.json();
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
       setError(errorData.message || "Błąd tworzenia firmy");
     }
   };
@@ -94,6 +93,19 @@ export default function CreateFirmPage() {
               value={newFirm.openingHours}
               onChange={(e) =>
                 setNewFirm({ ...newFirm, openingHours: e.target.value })
+              }
+              required
+            />
+          </label>
+        </div>
+        <div>
+          <label>
+            Adres:
+            <input
+              type="text"
+              value={newFirm.address}
+              onChange={(e) =>
+                setNewFirm({ ...newFirm, address: e.target.value })
               }
               required
             />

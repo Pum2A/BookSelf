@@ -5,9 +5,9 @@ import { SignJWT } from 'jose';
 
 export async function POST(request: Request) {
   try {
-    const { email, password, username } = await request.json();
+    const { email, password, username, role } = await request.json();
 
-    if (!email || !password || !username) {
+    if (!email || !password || !username ) {
       return NextResponse.json(
         { error: 'Email, password, and username are required' },
         { status: 400 }
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         username,
+        role,
       },
     });
 
@@ -49,9 +50,20 @@ export async function POST(request: Request) {
     // Zapisanie tokenu w ciasteczkach
     const response = NextResponse.json({
       message: 'User created successfully',
-      user,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
     });
-    response.cookies.set('token', jwt, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    response.cookies.set('token', jwt, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 2, // 2 godziny
+      path: '/',
+    });
 
     return response;
   } catch (error: any) {

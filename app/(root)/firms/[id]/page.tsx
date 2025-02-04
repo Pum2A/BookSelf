@@ -1,8 +1,8 @@
-// firms/[id]/page.tsx
 "use client";
 
 import React, { useEffect, useState, FormEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; // import router
+import { useParams } from "next/navigation"; // import useParams from next/navigation
 
 interface Firm {
   id: number;
@@ -16,7 +16,7 @@ interface Firm {
 export default function FirmDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { id } = params;
+  const { id } = params; // Now you can safely access `id`
 
   const [firm, setFirm] = useState<Firm | null>(null);
   const [formData, setFormData] = useState({
@@ -28,7 +28,11 @@ export default function FirmDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setError("Nie znaleziono ID firmy");
+      return;
+    }
+
     fetch(`/api/firms/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Firma nie znaleziona");

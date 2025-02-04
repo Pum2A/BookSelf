@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     // Generate JWT
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new SignJWT({ userId: user.id })
+    const token = await new SignJWT({ userId: user.id,  role: user.role })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('2h')
@@ -42,18 +42,19 @@ export async function POST(request: Request) {
       user: {
         id: user.id,
         email: user.email,
-        username: user.username
+        username: user.username,
+        role: user.role,
       }
     });
 
-    response.cookies.set('token', token, {
+    response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 2, // 2 hours
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 2, // 2 godziny
+      path: "/",
     });
-
+    
     return response;
 
   } catch (error: any) {

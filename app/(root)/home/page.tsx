@@ -1,4 +1,5 @@
 "use client";
+import { useUserStore } from "@/stores/userStore";
 import Image from "next/image";
 import { AiOutlineSearch } from "react-icons/ai";
 import {
@@ -8,9 +9,12 @@ import {
 } from "react-icons/ai";
 
 export default function HomePage() {
+  const { user } = useUserStore();
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen w-full text-white my-16 lg:my-16 px-4 mx-auto max-w-screen-xl">
       {/* Nagłówek */}
+      {user ? <p>Zalogowany jako: {user.username}</p> : <p>Nie zalogowany</p>}
       <div className="flex flex-col text-center mb-12 mx-auto">
         <h1 className="text-5xl font-bold leading-tight">
           Discover and Book{" "}
