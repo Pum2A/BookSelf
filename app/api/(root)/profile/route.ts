@@ -73,7 +73,12 @@ function verifyToken(req: NextRequest): number {
 }
 
 // Aktualizuje profil użytkownika w bazie danych
-async function updateUser(userId: number, username: string, bio: string, avatarPath?: string) {
+async function updateUser(
+  userId: number,
+  username: string,
+  bio: string,
+  avatarPath?: string
+) {
   return prisma.user.update({
     where: { id: userId },
     data: { username, bio, avatar: avatarPath },
@@ -87,11 +92,15 @@ export async function POST(req: NextRequest) {
     const userId = verifyToken(req);
     const { fields, files } = await parseForm(req);
 
-    const username = Array.isArray(fields.username) ? fields.username[0] : fields.username;
+    const username = Array.isArray(fields.username)
+      ? fields.username[0]
+      : fields.username;
     const bio = Array.isArray(fields.bio) ? fields.bio[0] : fields.bio;
 
     const avatarFile = files.avatar ? files.avatar[0] : undefined;
-    const avatarPath = avatarFile ? `/uploads/${avatarFile.newFilename}` : undefined;
+    const avatarPath = avatarFile
+      ? `/uploads/${avatarFile.newFilename}`
+      : undefined;
 
     const updatedUser = await updateUser(userId, username, bio, avatarPath);
 
@@ -107,3 +116,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export {};

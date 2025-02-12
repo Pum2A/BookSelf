@@ -1,4 +1,3 @@
-// app/api/menu-items/[id]/route.ts
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
@@ -29,12 +28,13 @@ async function verifyToken(request: Request) {
 // Pobierz pojedynczą usługę
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Walidacja ID
-    const id = Number(params.id);
-    if (isNaN(id)) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
       return NextResponse.json(
         { error: "Nieprawidłowy format ID" },
         { status: 400 }
@@ -42,7 +42,7 @@ export async function GET(
     }
 
     const menuItem = await prisma.menuItem.findUnique({
-      where: { id },
+      where: { id: numericId },
       include: { firm: true },
     });
 
@@ -65,7 +65,7 @@ export async function GET(
 // Aktualizuj usługę
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Weryfikacja autoryzacji
@@ -74,9 +74,10 @@ export async function PUT(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const { id } = await params;
     // Walidacja ID
-    const id = Number(params.id);
-    if (isNaN(id)) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
       return NextResponse.json(
         { error: "Nieprawidłowy format ID" },
         { status: 400 }
@@ -88,7 +89,7 @@ export async function PUT(
 
     // Sprawdź właścicielstwo
     const menuItem = await prisma.menuItem.findUnique({
-      where: { id },
+      where: { id: numericId },
       include: { firm: true },
     });
 
@@ -105,7 +106,7 @@ export async function PUT(
 
     // Aktualizacja
     const updatedItem = await prisma.menuItem.update({
-      where: { id },
+      where: { id: numericId },
       data: {
         name,
         description,
@@ -126,7 +127,7 @@ export async function PUT(
 // Usuń usługę
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Weryfikacja autoryzacji
@@ -135,9 +136,10 @@ export async function DELETE(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
+    const { id } = await params;
     // Walidacja ID
-    const id = Number(params.id);
-    if (isNaN(id)) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
       return NextResponse.json(
         { error: "Nieprawidłowy format ID" },
         { status: 400 }
@@ -146,7 +148,7 @@ export async function DELETE(
 
     // Sprawdź właścicielstwo
     const menuItem = await prisma.menuItem.findUnique({
-      where: { id },
+      where: { id: numericId },
       include: { firm: true },
     });
 
@@ -163,7 +165,7 @@ export async function DELETE(
 
     // Usuwanie
     await prisma.menuItem.delete({
-      where: { id },
+      where: { id: numericId },
     });
 
     return NextResponse.json(
@@ -177,3 +179,5 @@ export async function DELETE(
     );
   }
 }
+
+export {};

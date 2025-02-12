@@ -179,6 +179,12 @@ function Sidebar({
               Favorites
             </div>
           </NavButton>
+          <NavButton href="/bookings" isMobile>
+            <div className="flex items-center gap-4">
+              <AiOutlineHeart size={22} className="text-gray-700" />
+              Bookings
+            </div>
+          </NavButton>
         </ul>
 
         {/* Support Section */}

@@ -1,71 +1,97 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { jwtVerify } from "jose";
+import { cookies } from "next/headers";
 
 const prisma = new PrismaClient();
+const secret = new TextEncoder().encode(
+  process.env.JWT_SECRET || "default_secret_key"
+);
 
-// Pobranie konkretnej rezerwacji
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const id = parseInt((await params).id, 10);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Nieprawidłowe ID" }, { status: 400 });
+  }
+
+  // Example logic – fetch the booking
   const booking = await prisma.booking.findUnique({
-    where: { id: Number(params.id) },
+    where: { id },
+    include: {
+      firm: { select: { name: true } },
+      menuItem: { select: { name: true } },
+    },
   });
 
   if (!booking) {
     return NextResponse.json(
-      { message: "Rezerwacja nie znaleziona" },
+      { error: "Nie znaleziono rezerwacji" },
       { status: 404 }
     );
   }
 
-  return NextResponse.json(booking, { status: 200 });
+  return NextResponse.json(booking);
 }
 
-// Aktualizacja rezerwacji
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { bookingTime, numberOfPeople, status } = await req.json();
+  const id = parseInt((await params).id, 10);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Nieprawidłowe ID" }, { status: 400 });
+  }
 
-  try {
-    const updatedBooking = await prisma.booking.update({
-      where: { id: Number(params.id) },
-      data: {
-        bookingTime: bookingTime ? new Date(bookingTime) : undefined,
-        numberOfPeople,
-        status: status || "PENDING",
-      },
-    });
-
-    return NextResponse.json(updatedBooking, { status: 200 });
-  } catch (error) {
+  // Extract data from the request body
+  const { bookingTime, numberOfPeople, status } = await request.json();
+  const existingBooking = await prisma.booking.findUnique({ where: { id } });
+  if (!existingBooking) {
     return NextResponse.json(
-      { message: "Nie udało się zaktualizować rezerwacji", error },
-      { status: 400 }
+      { error: "Nie znaleziono rezerwacji" },
+      { status: 404 }
     );
   }
+
+  const updatedBooking = await prisma.booking.update({
+    where: { id },
+    data: {
+      bookingTime: bookingTime
+        ? new Date(bookingTime)
+        : existingBooking.bookingTime,
+      numberOfPeople: numberOfPeople || existingBooking.numberOfPeople,
+      status: status || existingBooking.status,
+    },
+  });
+
+  return NextResponse.json(updatedBooking);
 }
 
-// Usunięcie rezerwacji (Anulowanie)
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    await prisma.booking.delete({
-      where: { id: Number(params.id) },
-    });
+  const id = parseInt((await params).id, 10);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Nieprawidłowe ID" }, { status: 400 });
+  }
 
+  const existingBooking = await prisma.booking.findUnique({ where: { id } });
+  if (!existingBooking) {
     return NextResponse.json(
-      { message: "Rezerwacja anulowana" },
-      { status: 200 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { message: "Nie udało się usunąć rezerwacji", error },
-      { status: 400 }
+      { error: "Nie znaleziono rezerwacji" },
+      { status: 404 }
     );
   }
+
+  await prisma.booking.delete({ where: { id } });
+  return NextResponse.json(
+    { message: "Rezerwacja usunięta pomyślnie" },
+    { status: 200 }
+  );
 }
+
+// Empty export to ensure this file is treated as a module
+export {};
