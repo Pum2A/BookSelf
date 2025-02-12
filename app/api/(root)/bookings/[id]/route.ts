@@ -1,48 +1,71 @@
-// pages/api/bookings/[id]/route.ts
-
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, BookingStatus } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { id } = req.query;
+// Pobranie konkretnej rezerwacji
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const booking = await prisma.booking.findUnique({
+    where: { id: Number(params.id) },
+  });
 
-  if (req.method === 'GET') {
-    const booking = await prisma.booking.findUnique({
-      where: { id: Number(id) },
+  if (!booking) {
+    return NextResponse.json(
+      { message: "Rezerwacja nie znaleziona" },
+      { status: 404 }
+    );
+  }
+
+  return NextResponse.json(booking, { status: 200 });
+}
+
+// Aktualizacja rezerwacji
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const { bookingTime, numberOfPeople, status } = await req.json();
+
+  try {
+    const updatedBooking = await prisma.booking.update({
+      where: { id: Number(params.id) },
+      data: {
+        bookingTime: bookingTime ? new Date(bookingTime) : undefined,
+        numberOfPeople,
+        status: status || "PENDING",
+      },
     });
-    if (booking) {
-      res.status(200).json(booking);
-    } else {
-      res.status(404).json({ message: 'Rezerwacja nie znaleziona' });
-    }
-  } else if (req.method === 'PUT') {
-    const { bookingTime, numberOfPeople, status } = req.body;
 
-    try {
-      const updatedBooking = await prisma.booking.update({
-        where: { id: Number(id) },
-        data: {
-          bookingTime: bookingTime ? new Date(bookingTime) : undefined,
-          numberOfPeople,
-          status: status || BookingStatus.PENDING,
-        },
-      });
-      res.status(200).json(updatedBooking);
-    } catch (error) {
-      res.status(400).json({ message: 'Nie udało się zaktualizować rezerwacji', error });
-    }
-  } else if (req.method === 'DELETE') {
-    try {
-      await prisma.booking.delete({
-        where: { id: Number(id) },
-      });
-      res.status(204).end();
-    } catch (error) {
-      res.status(400).json({ message: 'Nie udało się usunąć rezerwacji', error });
-    }
-  } else {
-    res.status(405).json({ message: 'Metoda niedozwolona' });
+    return NextResponse.json(updatedBooking, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Nie udało się zaktualizować rezerwacji", error },
+      { status: 400 }
+    );
+  }
+}
+
+// Usunięcie rezerwacji (Anulowanie)
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await prisma.booking.delete({
+      where: { id: Number(params.id) },
+    });
+
+    return NextResponse.json(
+      { message: "Rezerwacja anulowana" },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Nie udało się usunąć rezerwacji", error },
+      { status: 400 }
+    );
   }
 }

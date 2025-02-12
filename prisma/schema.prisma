@@ -1,93 +1,87 @@
-// Źródło bazy danych, domyślnie PostgreSQL
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL") // Pobierane ze zmiennych środowiskowych
-}
-
-// Generator klienta Prisma
 generator client {
   provider = "prisma-client-js"
 }
 
-// Model użytkownika
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
   id        Int       @id @default(autoincrement())
   username  String    @unique
   email     String    @unique
   password  String
-  bio       String? // Opcjonalne pole
-  avatar    String? // Opcjonalne pole
-  role      UserRole  @default(CUSTOMER) // "CUSTOMER", "OWNER" lub "ADMIN"
+  bio       String?
+  avatar    String?
+  role      UserRole  @default(CUSTOMER)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  firms     Firm[]    @relation("UserFirms")
   bookings  Booking[] @relation("UserBookings")
+  firms     Firm[]    @relation("UserFirms")
   reviews   Review[]  @relation("UserReviews")
 }
 
-// Model firmy
 model Firm {
   id           Int        @id @default(autoincrement())
   name         String
   description  String
   location     String
   openingHours String
-  address      String // Nowe pole 'address'
+  address      String
   ownerId      Int
-  owner        User       @relation("UserFirms", fields: [ownerId], references: [id])
-  menuItems    MenuItem[] @relation("FirmMenuItems")
-  bookings     Booking[]  @relation("FirmBookings")
-  reviews      Review[]   @relation("FirmReviews")
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  bookings     Booking[]  @relation("FirmBookings")
+  owner        User       @relation("UserFirms", fields: [ownerId], references: [id])
+  menuItems    MenuItem[] @relation("FirmMenuItems")
+  reviews      Review[]   @relation("FirmReviews")
 }
 
-// Model pozycji menu
 model MenuItem {
-  id          Int    @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String
   price       Float
   category    String
   firmId      Int
-  firm        Firm   @relation("FirmMenuItems", fields: [firmId], references: [id])
+  Booking     Booking[]
+  firm        Firm      @relation("FirmMenuItems", fields: [firmId], references: [id])
 }
 
-// Model rezerwacji
 model Booking {
   id             Int           @id @default(autoincrement())
   bookingTime    DateTime
   numberOfPeople Int
-  status         BookingStatus @default(PENDING) // "PENDING", "CONFIRMED" lub "CANCELLED"
+  status         BookingStatus @default(PENDING)
   customerId     Int
-  customer       User          @relation("UserBookings", fields: [customerId], references: [id])
   firmId         Int
-  firm           Firm          @relation("FirmBookings", fields: [firmId], references: [id])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  menuItemId     Int?
+  customer       User          @relation("UserBookings", fields: [customerId], references: [id])
+  firm           Firm          @relation("FirmBookings", fields: [firmId], references: [id])
+  menuItem       MenuItem?     @relation(fields: [menuItemId], references: [id])
 }
 
-// Model recenzji
 model Review {
   id         Int      @id @default(autoincrement())
   rating     Int
   comment    String
   customerId Int
-  customer   User     @relation("UserReviews", fields: [customerId], references: [id])
   firmId     Int
-  firm       Firm     @relation("FirmReviews", fields: [firmId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  customer   User     @relation("UserReviews", fields: [customerId], references: [id])
+  firm       Firm     @relation("FirmReviews", fields: [firmId], references: [id])
 }
 
-// Enum dla ról użytkowników
 enum UserRole {
   CUSTOMER
   OWNER
   ADMIN
 }
 
-// Enum dla statusu rezerwacji
 enum BookingStatus {
   PENDING
   CONFIRMED
