@@ -155,10 +155,10 @@ function Sidebar({
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Books
           </h3>
-          <NavButton href="/bookings" isMobile>
+          <NavButton href="/firms" isMobile>
             <div className="flex items-center gap-4">
               <AiOutlineCalendar size={22} className="text-gray-700" />
-              Booking
+              Firms
             </div>
           </NavButton>
           <NavButton href="/history" isMobile>

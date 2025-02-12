@@ -18,11 +18,18 @@ export default function FirmsListPage() {
 
   useEffect(() => {
     fetch("/api/firms")
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          // Rzucamy błędem z komunikatem z serwera
+          throw new Error(data.message || "Błąd pobierania danych");
+        }
+        return data;
+      })
       .then((data) => setFirms(data))
       .catch((err) => {
         console.error(err);
-        setError("Błąd pobierania firm");
+        setError(err.message);
       });
   }, []);
 
@@ -41,6 +48,9 @@ export default function FirmsListPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {firms.length === 0 && !error && (
+          <p className="text-gray-500 text-center">Brak dostępnych firm</p>
+        )}
         {firms.map((firm) => (
           <div
             key={firm.id}

@@ -16,16 +16,41 @@ interface JwtPayload {
 }
 
 export async function GET(request: Request) {
-  try {
-    const firms = await prisma.firm.findMany();
-    return NextResponse.json(firms, { status: 200 });
-  } catch (error: any) {
-    console.error("Błąd podczas pobierania firm:", error);
+  // Pobranie tokena z ciasteczek
+  const cookieStore = cookies();
+  const token = (await cookieStore).get("token")?.value;
+  if (!token) {
     return NextResponse.json(
-      { message: "Błąd serwera", error: error.message || "Unknown error" },
-      { status: 500 }
+      { message: "Brak tokenu. Musisz być zalogowany." },
+      { status: 401 }
     );
   }
+
+  let payload: JwtPayload;
+  try {
+    const { payload: verifiedPayload } = await jwtVerify(token, secret);
+    payload = verifiedPayload as unknown as JwtPayload;
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Nieprawidłowy lub wygasły token." },
+      { status: 401 }
+    );
+  }
+
+  // Tylko użytkownik z rolą 'owner' ma dostęp do firm
+  if (payload.role !== "OWNER") {
+    return NextResponse.json(
+      { message: "Brak uprawnień do przeglądania firm." },
+      { status: 403 }
+    );
+  }
+
+  // Pobranie firm należących do zalogowanego właściciela
+  const firms = await prisma.firm.findMany({
+    where: { ownerId: payload.userId },
+  });
+
+  return NextResponse.json(firms, { status: 200 });
 }
 
 export async function POST(request: Request) {
