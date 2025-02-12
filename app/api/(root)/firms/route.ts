@@ -4,13 +4,28 @@ import { cookies } from "next/headers";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "default_secret_key");
+const secret = new TextEncoder().encode(
+  process.env.JWT_SECRET || "default_secret_key"
+);
 
 interface JwtPayload {
   userId: number;
   role: string;
   iat: number;
   exp: number;
+}
+
+export async function GET(request: Request) {
+  try {
+    const firms = await prisma.firm.findMany();
+    return NextResponse.json(firms, { status: 200 });
+  } catch (error: any) {
+    console.error("Błąd podczas pobierania firm:", error);
+    return NextResponse.json(
+      { message: "Błąd serwera", error: error.message || "Unknown error" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -51,9 +66,16 @@ export async function POST(request: Request) {
     }
 
     // Pobierz dane firmy z body zapytania
-    const { name, description, location, address, openingHours } = await request.json();
+    const { name, description, location, address, openingHours } =
+      await request.json();
 
-    console.log("Dane firmy:", { name, description, location, address, openingHours });
+    console.log("Dane firmy:", {
+      name,
+      description,
+      location,
+      address,
+      openingHours,
+    });
 
     // Sprawdzenie, czy wszystkie dane są przekazane
     if (!name || !description || !location || !address || !openingHours) {
@@ -79,18 +101,26 @@ export async function POST(request: Request) {
     console.log("Firma utworzona:", newFirm);
 
     // Zwróć odpowiedź po udanym tworzeniu firmy
-    return NextResponse.json({ message: "Firma utworzona", firm: newFirm }, { status: 201 });
-
+    return NextResponse.json(
+      { message: "Firma utworzona", firm: newFirm },
+      { status: 201 }
+    );
   } catch (error: any) {
     // Improved error logging to avoid logging null
     if (error instanceof Error) {
-      console.error("Błąd podczas tworzenia firmy:", error.stack || error.message);
+      console.error(
+        "Błąd podczas tworzenia firmy:",
+        error.stack || error.message
+      );
     } else {
       console.error("Nieoczekiwany błąd:", error);
     }
 
     return NextResponse.json(
-      { message: "Nie udało się utworzyć firmy", error: error.message || "Unknown error" },
+      {
+        message: "Nie udało się utworzyć firmy",
+        error: error.message || "Unknown error",
+      },
       { status: 500 }
     );
   }
