@@ -167,6 +167,12 @@ function Sidebar({
               History
             </div>
           </NavButton>
+          <NavButton href="/reservations" isMobile>
+            <div className="flex items-center gap-4">
+              <FaHistory size={22} className="text-gray-700" />
+              Reservations
+            </div>
+          </NavButton>
           <NavButton href="/favorites" isMobile>
             <div className="flex items-center gap-4">
               <AiOutlineHeart size={22} className="text-gray-700" />

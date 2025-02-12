@@ -2,37 +2,44 @@ import { NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma"; // Upewnij się, że import jest poprawny
 
 // Funkcja obsługująca zapytanie GET dla pojedynczej firmy
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params;
-
-  if (!id) {
-    return NextResponse.json(
-      { message: "Brak id w zapytaniu" },
-      { status: 400 }
-    );
-  }
-
   try {
-    // Wyszukiwanie firmy w bazie danych
+    // Weryfikacja parametru ID
+    if (!params?.id) {
+      return NextResponse.json({ error: "Brak parametru ID" }, { status: 400 });
+    }
+
+    const id = parseInt(params.id, 10);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: "Nieprawidłowy format ID" },
+        { status: 400 }
+      );
+    }
+
     const firm = await prisma.firm.findUnique({
-      where: { id: Number(id) }, // Konwertujemy id na liczbę
+      where: { id },
+      include: { menuItems: true },
     });
 
     if (!firm) {
       return NextResponse.json(
-        { message: "Firma nie znaleziona" },
+        { error: "Firma nie znaleziona" },
         { status: 404 }
       );
     }
 
-    // Zwracamy firmę, jeśli została znaleziona
-    return NextResponse.json(firm, { status: 200 });
+    return NextResponse.json(firm);
   } catch (error) {
-    console.error("Błąd podczas pobierania firmy:", error);
-    return NextResponse.json({ message: "Błąd serwera" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Błąd serwera", details: error },
+      { status: 500 }
+    );
   }
 }
 

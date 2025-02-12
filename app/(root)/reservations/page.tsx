@@ -2,126 +2,139 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/stores/userStore";
+import Link from "next/link";
 
-// Interfejsy – możesz je modyfikować w zależności od struktury danych
 interface Booking {
   id: number;
   bookingTime: string;
   numberOfPeople: number;
-  status: string; // np. "PENDING", "CONFIRMED", "CANCELLED"
-  firm: {
-    id: number;
-    name: string;
-    // inne dane firmy jeśli potrzebne
-  };
-  menuItem?: {
-    id: number;
-    name: string;
-    // opcjonalnie: cena, opis itp.
-  };
+  status: string;
+  firmName: string;
+  menuItemName?: string;
 }
 
-export default function BookingsListPage() {
+export default function BookingsPage() {
+  const router = useRouter();
+  const { user } = useUserStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-
-  // Funkcja pobierająca rezerwacje zalogowanego klienta
-  const fetchBookings = async () => {
-    try {
-      const res = await fetch("/api/bookings", { credentials: "include" });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Błąd pobierania rezerwacji");
-      }
-      setBookings(data);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
+  const [showBookings, setShowBookings] = useState(true); // Domyślnie pokazujemy rezerwacje
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (!user) {
+      setError("Musisz być zalogowany, aby zobaczyć rezerwacje.");
+      return;
+    }
 
-  // Funkcja do anulowania rezerwacji z dodatkowym potwierdzeniem
-  const handleCancel = async (bookingId: number) => {
-    const confirmCancel = window.confirm(
-      "Czy na pewno chcesz anulować tę rezerwację?"
-    );
-    if (!confirmCancel) return;
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch("/api/bookings");
+        if (!res.ok) throw new Error("Nie udało się pobrać rezerwacji.");
+        const data = await res.json();
+        setBookings(data);
+      } catch (err: any) {
+        setError(err.message);
+      }
+    };
+
+    fetchBookings();
+  }, [user]);
+
+  const handleCancel = async (id: number) => {
+    if (!confirm("Czy na pewno chcesz anulować tę rezerwację?")) return;
 
     try {
-      const res = await fetch(`/api/bookings/${bookingId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Błąd anulowania rezerwacji");
-      }
+      const response = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+
+      if (!response.ok) throw new Error("Nie udało się anulować rezerwacji.");
+
       alert("Rezerwacja została anulowana.");
-      fetchBookings(); // odświeżenie listy rezerwacji
+      setBookings((prev) => prev.filter((booking) => booking.id !== id));
     } catch (err: any) {
       setError(err.message);
     }
-  };
-
-  // Pomocnicza funkcja formatująca datę i godzinę
-  const formatDateTime = (dateTimeStr: string) => {
-    const date = new Date(dateTimeStr);
-    return date.toLocaleString();
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">Moje rezerwacje</h1>
+    <div className="max-w-3xl mx-auto p-8 bg-white shadow rounded">
+      <h1 className="text-3xl font-bold mb-6 text-center">Rezerwacje</h1>
+
+      <div className="flex justify-center space-x-4 mb-6">
+        <button
+          onClick={() => setShowBookings(true)}
+          className={`py-2 px-4 rounded ${
+            showBookings ? "bg-blue-600 text-white" : "bg-gray-200"
+          }`}
+        >
+          Moje rezerwacje
+        </button>
+        <button
+          onClick={() => setShowBookings(false)}
+          className={`py-2 px-4 rounded ${
+            !showBookings ? "bg-blue-600 text-white" : "bg-gray-200"
+          }`}
+        >
+          Zarezerwuj usługę
+        </button>
+      </div>
+
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-      {bookings.length === 0 ? (
-        <p className="text-center text-gray-600">
-          Nie masz żadnych rezerwacji.
-        </p>
-      ) : (
-        <div className="space-y-6">
-          {bookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="border rounded p-6 bg-white shadow"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold">
-                  {booking.firm.name}
-                  {booking.menuItem && ` - ${booking.menuItem.name}`}
-                </h2>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    booking.status === "CONFIRMED"
-                      ? "bg-green-200 text-green-800"
-                      : booking.status === "PENDING"
-                      ? "bg-yellow-200 text-yellow-800"
-                      : "bg-red-200 text-red-800"
-                  }`}
-                >
+
+      {showBookings ? (
+        bookings.length ? (
+          <ul className="space-y-6">
+            {bookings.map((booking) => (
+              <li key={booking.id} className="border p-4 rounded bg-gray-50">
+                <p className="text-lg font-semibold">{booking.firmName}</p>
+                {booking.menuItemName && (
+                  <p className="text-sm text-gray-600">
+                    Usługa: {booking.menuItemName}
+                  </p>
+                )}
+                <p>
+                  <span className="font-semibold">Data i godzina:</span>{" "}
+                  {new Date(booking.bookingTime).toLocaleString()}
+                </p>
+                <p>
+                  <span className="font-semibold">Liczba osób:</span>{" "}
+                  {booking.numberOfPeople}
+                </p>
+                <p>
+                  <span className="font-semibold">Status:</span>{" "}
                   {booking.status}
-                </span>
-              </div>
-              <p className="mb-2">
-                <span className="font-semibold">Data i godzina:</span>{" "}
-                {formatDateTime(booking.bookingTime)}
-              </p>
-              <p className="mb-2">
-                <span className="font-semibold">Liczba osób:</span>{" "}
-                {booking.numberOfPeople}
-              </p>
-              {/* Możesz dodać dodatkowe informacje, np. opis usługi */}
-              <button
-                onClick={() => handleCancel(booking.id)}
-                className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
-              >
-                Anuluj rezerwację
-              </button>
-            </div>
-          ))}
+                </p>
+                <div className="flex space-x-4 mt-4">
+                  <button
+                    onClick={() => router.push(`/bookings/${booking.id}/edit`)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
+                  >
+                    Edytuj
+                  </button>
+                  <button
+                    onClick={() => handleCancel(booking.id)}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition"
+                  >
+                    Anuluj
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-center">Brak rezerwacji.</p>
+        )
+      ) : (
+        <div className="text-center">
+          <p className="mb-4 text-gray-700">
+            Kliknij poniżej, aby zarezerwować usługę.
+          </p>
+          <Link
+            href="/bookings"
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition"
+          >
+            Zarezerwuj
+          </Link>
         </div>
       )}
     </div>

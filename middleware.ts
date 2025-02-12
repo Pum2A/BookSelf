@@ -23,5 +23,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/home/:path*", "/firms/:path*"], // 🔹 Strony wymagające logowania
+  matcher: ["/firms/:path*", "/home", "/bookings"],
 };
