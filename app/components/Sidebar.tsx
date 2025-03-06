@@ -52,6 +52,30 @@ function Sidebar({
     }
   };
 
+  const handleBecomeUser = async () => {
+    try {
+      const response = await fetch("/api/users/become-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user?.id }),
+      });
+
+      if (response.ok) {
+        toast.success("You are now a regular user!");
+        useUserStore.getState().updateUserRole("user");
+        router.refresh();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to downgrade account");
+      }
+    } catch (error) {
+      console.error("Become user error:", error);
+      toast.error("Error downgrading account");
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       const response = await fetch("/api/auth/signout", {
@@ -90,13 +114,17 @@ function Sidebar({
         </Button>
       )}
 
-      {user?.role === "owner" && (
-        <NavButton href="/owner-dashboard" isMobile>
-          <div className="flex items-center gap-4">
-            <FiShield size={22} className="text-gray-700" />
-            Owner Dashboard
+      {user?.role !== "customer" && (
+        <Button
+          onClick={handleBecomeUser}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+          variant="ghost"
+        >
+          <div className="flex items-center gap-2">
+            <AiOutlineUser className="mr-2" />
+            Become User
           </div>
-        </NavButton>
+        </Button>
       )}
     </ul>
   );
@@ -150,41 +178,38 @@ function Sidebar({
           </NavButton>
         </ul>
 
-        {/* Books Section */}
+        {/* Books Section - Role-based content */}
         <ul className="flex flex-col gap-5 w-full mt-6">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Books
           </h3>
-          <NavButton href="/firms" isMobile>
-            <div className="flex items-center gap-4">
-              <AiOutlineCalendar size={22} className="text-gray-700" />
-              Firms
-            </div>
-          </NavButton>
-          <NavButton href="/history" isMobile>
-            <div className="flex items-center gap-4">
-              <FaHistory size={22} className="text-gray-700" />
-              History
-            </div>
-          </NavButton>
+
           <NavButton href="/reservations" isMobile>
             <div className="flex items-center gap-4">
               <FaHistory size={22} className="text-gray-700" />
               Reservations
             </div>
           </NavButton>
-          <NavButton href="/favorites" isMobile>
-            <div className="flex items-center gap-4">
-              <AiOutlineHeart size={22} className="text-gray-700" />
-              Favorites
-            </div>
-          </NavButton>
-          <NavButton href="/bookings" isMobile>
-            <div className="flex items-center gap-4">
-              <AiOutlineHeart size={22} className="text-gray-700" />
-              Bookings
-            </div>
-          </NavButton>
+
+          {/* Show "Firms" only if NOT a customer */}
+          {user?.role !== "CUSTOMER" && (
+            <NavButton href="/firms" isMobile>
+              <div className="flex items-center gap-4">
+                <AiOutlineHeart size={22} className="text-gray-700" />
+                Firms
+              </div>
+            </NavButton>
+          )}
+
+          {/* Show "Bookings" only if NOT an owner or NO role is specified */}
+          {user?.role !== "OWNER" && (
+            <NavButton href="/bookings" isMobile>
+              <div className="flex items-center gap-4">
+                <AiOutlineHeart size={22} className="text-gray-700" />
+                Bookings
+              </div>
+            </NavButton>
+          )}
         </ul>
 
         {/* Support Section */}

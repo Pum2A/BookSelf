@@ -16,9 +16,9 @@ interface JwtPayload {
 }
 
 export async function GET(request: Request) {
-  // Pobierz token z ciasteczek
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value;
+
   if (!token) {
     return NextResponse.json(
       { message: "Brak tokenu. Musisz być zalogowany." },
@@ -38,14 +38,14 @@ export async function GET(request: Request) {
   }
 
   let firms;
-  // Jeśli użytkownik ma rolę OWNER, zwracamy tylko firmy należące do niego.
-  // Jeśli użytkownik ma rolę CUSTOMER (lub ADMIN), zwracamy wszystkie firmy wraz z usługami.
   if (payload.role === "OWNER") {
+    // OWNER widzi tylko swoje firmy
     firms = await prisma.firm.findMany({
       where: { ownerId: payload.userId },
       include: { menuItems: true },
     });
   } else {
+    // CUSTOMER i ADMIN widzą wszystkie firmy
     firms = await prisma.firm.findMany({
       include: { menuItems: true },
     });
