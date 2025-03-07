@@ -1,87 +1,145 @@
 "use client";
 
-import React from "react";
-import NavButton from "./reusableComponents/NavButton";
-import { CiMenuBurger } from "react-icons/ci";
-import { AiFillHome, AiOutlineInfoCircle, AiOutlineUser } from "react-icons/ai";
-import { MdSupportAgent } from "react-icons/md";
-import { AiOutlineCalendar, AiOutlineHeart } from "react-icons/ai";
-import { FaHistory } from "react-icons/fa";
-import { useMenu } from "../(root)/contexts/MenuContext";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/stores/userStore";
-import { FiShield } from "react-icons/fi"; // Nowa ikona dla właściciela
+import { useMenu } from "../(root)/contexts/MenuContext";
+import {
+  HomeIcon,
+  InfoIcon,
+  UserIcon,
+  BookmarkIcon,
+  HeartIcon,
+  HistoryIcon,
+  HelpCircleIcon,
+  ShieldIcon,
+  LogOutIcon,
+  MenuIcon,
+  ChevronRightIcon,
+} from "lucide-react";
 
-function Sidebar({
-  isLoggedIn,
-  userData, // Zmieniamy nazwę zmiennej na userData
-}: {
+interface UserData {
+  avatar: string;
+  username: string;
+  role?: string;
+}
+
+interface SidebarProps {
   isLoggedIn: boolean;
-  userData: {
-    avatar: string;
-    username: string;
-    role?: string;
-  } | null;
-}) {
+  userData: UserData | null;
+}
+
+interface NavItemProps {
+  href: string;
+  icon: React.ComponentType<{ size: number; className?: string }>;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({
+  href,
+  icon: Icon,
+  label,
+  active = false,
+  onClick,
+}) => {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`group relative w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-300
+        ${
+          active
+            ? "bg-accents/10 text-accents before:absolute before:left-0 before:h-6 before:w-1 before:bg-accents before:rounded-full"
+            : "text-secondText hover:bg-background/50 hover:text-text"
+        }`}
+    >
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        className="p-2 rounded-lg bg-background/20 backdrop-blur-sm"
+      >
+        <Icon
+          size={20}
+          className={`${
+            active ? "text-accents" : "text-secondText group-hover:text-accents"
+          }`}
+        />
+      </motion.div>
+      <span className="font-medium text-sm">{label}</span>
+      <ChevronRightIcon
+        size={16}
+        className={`ml-auto transform transition-transform ${
+          active
+            ? "text-accents"
+            : "text-secondText opacity-0 group-hover:opacity-100"
+        }`}
+      />
+    </Link>
+  );
+};
+
+const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
   const { menuOpen, toggleMenu } = useMenu();
   const router = useRouter();
-  const { user } = useUserStore(); // Pobieranie użytkownika z Zustand
+  const { user } = useUserStore();
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  const handleBecomeOwner = async () => {
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleBecomeOWNER = async () => {
     try {
       const response = await fetch("/api/users/become-owner", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user?.id }),
       });
-
       if (response.ok) {
-        toast.success("You are now an owner!");
-        useUserStore.getState().updateUserRole("owner");
+        toast.success("You are now an OWNER!");
+        useUserStore.getState().updateUserRole("OWNER");
         router.refresh();
       } else {
         toast.error("Failed to upgrade account");
       }
     } catch (error) {
-      console.error("Become owner error:", error);
+      console.error("Become OWNER error:", error);
       toast.error("Error upgrading account");
     }
   };
 
-  const handleBecomeUser = async () => {
+  // Nowa funkcja przełączająca rolę z OWNER na customer
+  const handleSwitchToCustomer = async () => {
     try {
       const response = await fetch("/api/users/become-user", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user?.id }),
       });
-
       if (response.ok) {
-        toast.success("You are now a regular user!");
-        useUserStore.getState().updateUserRole("user");
+        toast.success("Switched to customer role successfully!");
+        useUserStore.getState().updateUserRole("customer");
         router.refresh();
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || "Failed to downgrade account");
+        toast.error("Failed to switch to customer role");
       }
     } catch (error) {
-      console.error("Become user error:", error);
-      toast.error("Error downgrading account");
+      console.error("Switch to customer error:", error);
+      toast.error("Error switching role");
     }
   };
 
   const handleSignOut = async () => {
     try {
-      const response = await fetch("/api/auth/signout", {
-        method: "POST",
-      });
-
+      const response = await fetch("/api/auth/signout", { method: "POST" });
       if (response.ok) {
         toast.success("Successfully signed out.");
         router.push("/signin");
@@ -95,157 +153,188 @@ function Sidebar({
     }
   };
 
-  const ownerSection = (
-    <ul className="flex flex-col gap-5 w-full mt-6">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-        Account
-      </h3>
-
-      {user?.role !== "owner" && (
-        <Button
-          onClick={handleBecomeOwner}
-          className="w-full bg-purple-500 hover:bg-purple-600 text-white"
-          variant="ghost"
-        >
-          <div className="flex items-center gap-2">
-            <FiShield className="mr-2" />
-            Become Owner
-          </div>
-        </Button>
-      )}
-
-      {user?.role !== "customer" && (
-        <Button
-          onClick={handleBecomeUser}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-          variant="ghost"
-        >
-          <div className="flex items-center gap-2">
-            <AiOutlineUser className="mr-2" />
-            Become User
-          </div>
-        </Button>
-      )}
-    </ul>
-  );
-
   return (
-    <div className="relative flex min-h-screen border-r-2 border-gray-700">
-      {/* Sidebar */}
-      <div className="top-0 left-0 z-50 h-screen w-screen lg:w-64 bg-gray-800 p-6">
-        {/* Logo */}
-        <a href="/" className="text-2xl text-white font-semibold mb-8 block">
-          <span className="text-green-400">BOOK</span>SELF
-        </a>
+    <>
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+            onClick={toggleMenu}
+          />
+        )}
+      </AnimatePresence>
 
-        {/* User Profile or Authentication */}
-        {userData && (
-          <div className="flex items-center gap-4 mb-8">
-            <img
-              src={userData.avatar || "/default-avatar.png"}
-              alt="User Profile"
-              className="w-12 h-12 rounded-full border-2 border-gray-300 object-cover"
-            />
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={toggleMenu}
+        className="fixed top-4 right-4 p-2 rounded-xl bg-background/80 backdrop-blur-lg text-text z-50 lg:hidden shadow-xl hover:bg-sections/50 transition-all"
+      >
+        <MenuIcon size={24} />
+      </motion.button>
 
-            <div>
-              <p className="text-lg text-white">{userData.username}</p>
-              <a
-                href="/profile"
-                className="text-sm text-gray-400 hover:text-white"
-              >
-                View Profile
-              </a>
+      <motion.div
+        className="fixed top-0 left-0 h-screen w-72 bg-background/95 backdrop-blur-lg border-r border-border/20 z-50 flex flex-col shadow-2xl"
+        initial={false}
+        animate={menuOpen || isDesktop ? "open" : "closed"}
+        variants={{
+          open: { x: 0 },
+          closed: { x: "-100%" },
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <div className="flex flex-col h-full p-4">
+          {/* Logo Section */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="px-4 py-4 mb-4"
+          >
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-2xl font-bold bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent">
+                BOOKSELF
+              </span>
+            </Link>
+          </motion.div>
+
+          {/* User Profile */}
+          {userData && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="p-4 mb-4 rounded-xl bg-background/50 border border-border/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-accents/10 blur-lg rounded-full" />
+                  <img
+                    src={userData.avatar || "/default-avatar.png"}
+                    alt="Profile"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-accents/20 relative z-10"
+                  />
+                  {userData.role === "OWNER" && (
+                    <div className="absolute -top-1 -right-1 bg-accents rounded-full p-1.5 shadow-sm">
+                      <ShieldIcon size={12} className="text-text" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-text font-medium truncate">
+                    {userData.username}
+                  </p>
+                  <Link
+                    href="/profile"
+                    className="text-xs text-secondText/80 hover:text-accents truncate flex items-center gap-1 transition-colors"
+                  >
+                    View Profile <ChevronRightIcon size={12} />
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Navigation Items */}
+          <div className="flex-1 overflow-y-auto space-y-4">
+            <div className="space-y-2">
+              <h3 className="px-4 text-xs font-medium text-secondText/60 uppercase tracking-wider mb-1">
+                Navigation
+              </h3>
+              <nav className="space-y-1">
+                <NavItem href="/home" icon={HomeIcon} label="Home" />
+                <NavItem href="/about" icon={InfoIcon} label="About" />
+                {user?.role !== "OWNER" && (
+                  <NavItem
+                    href="/reservations"
+                    icon={HistoryIcon}
+                    label="Reservations"
+                  />
+                )}
+                {user?.role === "OWNER" ? (
+                  <NavItem href="/firms" icon={BookmarkIcon} label="My Firms" />
+                ) : (
+                  <NavItem
+                    href="/bookings"
+                    icon={HeartIcon}
+                    label="My Bookings"
+                  />
+                )}
+              </nav>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="px-4 text-xs font-medium text-secondText/60 uppercase tracking-wider mb-1">
+                Management
+              </h3>
+              <nav className="space-y-1">
+                <NavItem
+                  href="/support"
+                  icon={HelpCircleIcon}
+                  label="Support"
+                />
+              </nav>
             </div>
           </div>
-        )}
 
-        {/* Navigation Items */}
-        <ul className="flex flex-col gap-5 w-full">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Navigation
-          </h3>
-          <NavButton href="/home" isMobile>
-            <div className="flex items-center gap-4">
-              <AiFillHome size={22} className="text-gray-700" />
-              Home
-            </div>
-          </NavButton>
-          <NavButton href="/about" isMobile>
-            <div className="flex items-center gap-4">
-              <AiOutlineInfoCircle size={22} className="text-gray-700" />
-              About
-            </div>
-          </NavButton>
-        </ul>
+          {/* Account Section */}
+          <div className="mt-auto space-y-4 pt-4 border-t border-border/10">
+            {isLoggedIn && user?.role !== "OWNER" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="px-4"
+              >
+                <Button
+                  onClick={handleBecomeOWNER}
+                  className="w-full bg-accents/5 hover:bg-accents/10 text-accents rounded-lg transition-all"
+                  size="sm"
+                >
+                  <ShieldIcon size={16} className="mr-2" />
+                  Upgrade to OWNER
+                </Button>
+              </motion.div>
+            )}
 
-        {/* Books Section - Role-based content */}
-        <ul className="flex flex-col gap-5 w-full mt-6">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Books
-          </h3>
+            {isLoggedIn && user?.role === "OWNER" && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="px-4"
+              >
+                <Button
+                  onClick={handleSwitchToCustomer}
+                  className="w-full bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 rounded-lg transition-all"
+                  size="sm"
+                >
+                  <UserIcon size={16} className="mr-2" />
+                  Switch to Customer
+                </Button>
+              </motion.div>
+            )}
 
-          <NavButton href="/reservations" isMobile>
-            <div className="flex items-center gap-4">
-              <FaHistory size={22} className="text-gray-700" />
-              Reservations
-            </div>
-          </NavButton>
-
-          {/* Show "Firms" only if NOT a customer */}
-          {user?.role !== "CUSTOMER" && (
-            <NavButton href="/firms" isMobile>
-              <div className="flex items-center gap-4">
-                <AiOutlineHeart size={22} className="text-gray-700" />
-                Firms
-              </div>
-            </NavButton>
-          )}
-
-          {/* Show "Bookings" only if NOT an owner or NO role is specified */}
-          {user?.role !== "OWNER" && (
-            <NavButton href="/bookings" isMobile>
-              <div className="flex items-center gap-4">
-                <AiOutlineHeart size={22} className="text-gray-700" />
-                Bookings
-              </div>
-            </NavButton>
-          )}
-        </ul>
-
-        {/* Support Section */}
-        <ul className="flex flex-col gap-5 w-full mt-6">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Support
-          </h3>
-          <NavButton href="/support" isMobile>
-            <div className="flex items-center gap-4">
-              <MdSupportAgent size={22} className="text-gray-700" />
-              Support
-            </div>
-          </NavButton>
-
-          {isLoggedIn && ownerSection}
-
-          {/* Logout Button */}
-          {isLoggedIn && (
-            <Button
-              onClick={handleSignOut}
-              className="w-full mt-4 bg-red-500 text-white hover:bg-red-600 transition duration-200"
-            >
-              Logout
-            </Button>
-          )}
-        </ul>
-      </div>
-
-      {/* Menu Toggle Icon */}
-      <CiMenuBurger
-        size={30}
-        className="text-white cursor-pointer lg:hidden fixed top-6 right-6 z-50"
-        onClick={toggleMenu}
-      />
-    </div>
+            {isLoggedIn && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="border-t border-border/10 pt-4"
+              >
+                <Button
+                  onClick={handleSignOut}
+                  className="w-full bg-red-500/5 hover:bg-red-500/10 text-red-400 rounded-lg transition-all"
+                  size="default"
+                >
+                  <LogOutIcon size={16} className="mr-2" />
+                  Sign Out
+                </Button>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
-}
+};
 
 export default Sidebar;

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
 export default function BookServicePage() {
   const searchParams = useSearchParams();
@@ -12,15 +13,16 @@ export default function BookServicePage() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [numberOfPeople, setNumberOfPeople] = useState(1);
-  const [date, setDate] = useState(""); // Możesz umożliwić wybór daty
+  const [date, setDate] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Funkcja pobierająca dostępne sloty dla wybranej daty
   const fetchAvailableSlots = async (selectedDate: string) => {
     if (!firmId || !selectedDate) return;
     const res = await fetch(
       `/api/bookings/available?firmId=${firmId}&date=${selectedDate}`,
-      { credentials: "include" }
+      {
+        credentials: "include",
+      }
     );
     if (res.ok) {
       const data = await res.json();
@@ -31,9 +33,8 @@ export default function BookServicePage() {
     }
   };
 
-  // Ustaw domyślną datę (np. dzisiejsza) i pobierz sloty
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0]; // format YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0];
     setDate(today);
     fetchAvailableSlots(today);
   }, [firmId]);
@@ -50,8 +51,6 @@ export default function BookServicePage() {
       setError("Wybierz godzinę rezerwacji");
       return;
     }
-
-    // Łączymy datę z wybraną godziną
     const bookingDateTime = new Date(`${date}T${selectedSlot}`);
     const response = await fetch("/api/bookings", {
       method: "POST",
@@ -74,55 +73,73 @@ export default function BookServicePage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-8 bg-white shadow rounded">
-      <h1 className="text-3xl font-bold mb-6 text-center">Rezerwacja usługi</h1>
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-2xl mx-auto p-8 bg-sections rounded-2xl border border-border/50 shadow-2xl"
+    >
+      <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent">
+        Book Your Service
+      </h1>
+      {error && <p className="text-red-400 text-center mb-6">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
         <div>
-          <label className="block mb-2 font-semibold">Data rezerwacji</label>
-          <input
-            type="date"
-            value={date}
-            onChange={handleDateChange}
-            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <label className="block text-lg font-medium mb-3 text-text">
+            Reservation Date
+          </label>
+          <div className="relative">
+            <input
+              type="date"
+              value={date}
+              onChange={handleDateChange}
+              className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border focus:border-accents focus:ring-2 focus:ring-accents/30 transition-all"
+            />
+          </div>
         </div>
 
         <div>
-          <label className="block mb-2 font-semibold">Godzina rezerwacji</label>
-          <select
-            value={selectedSlot}
-            onChange={(e) => setSelectedSlot(e.target.value)}
-            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Wybierz godzinę</option>
+          <label className="block text-lg font-medium mb-3 text-text">
+            Available Slots
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {availableSlots.map((slot) => (
-              <option key={slot} value={slot}>
+              <button
+                key={slot}
+                type="button"
+                onClick={() => setSelectedSlot(slot)}
+                className={`p-3 rounded-lg text-center transition-all ${
+                  selectedSlot === slot
+                    ? "bg-accents text-text"
+                    : "bg-background text-secondText hover:bg-sections/50"
+                }`}
+              >
                 {slot}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         </div>
 
         <div>
-          <label className="block mb-2 font-semibold">Liczba osób</label>
+          <label className="block text-lg font-medium mb-3 text-text">
+            Number of People
+          </label>
           <input
             type="number"
             value={numberOfPeople}
             onChange={(e) => setNumberOfPeople(Number(e.target.value))}
             min="1"
-            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border focus:border-accents focus:ring-2 focus:ring-accents/30"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded transition-colors"
+          className="w-full bg-accents hover:bg-accents-dark text-text font-bold py-4 px-8 rounded-xl transition-colors shadow-lg"
         >
-          Zarezerwuj
+          Confirm Booking
         </button>
       </form>
-    </div>
+    </motion.div>
   );
 }

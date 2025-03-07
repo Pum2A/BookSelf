@@ -1,27 +1,41 @@
-import { NextResponse } from 'next/server';
-import bcrypt from 'bcrypt';
-import prisma from '@/app/lib/prisma';
-import { SignJWT } from 'jose';
+// app/api/auth/signup/route.ts
+import { NextResponse } from "next/server";
+import bcrypt from "bcrypt";
+import prisma from "@/app/lib/prisma";
+import { UserRole } from "@prisma/client";
+import { SignJWT } from "jose";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters long" }),
+  username: z
+    .string()
+    .min(3, { message: "Username must be at least 3 characters long" }),
+  role: z.enum(["user"]).optional(), // opcjonalnie – domyślnie "user"
+});
 
 export async function POST(request: Request) {
   try {
-    const { email, password, username, role } = await request.json();
+    const body = await request.json();
+    const parseResult = signupSchema.safeParse(body);
 
-    if (!email || !password || !username ) {
-      return NextResponse.json(
-        { error: 'Email, password, and username are required' },
-        { status: 400 }
-      );
+    if (!parseResult.success) {
+      const errors = parseResult.error.errors
+        .map((err) => err.message)
+        .join(", ");
+      return NextResponse.json({ error: errors }, { status: 400 });
     }
 
-    // Sprawdzanie, czy użytkownik już istnieje
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const { email, password, username, role } = parseResult.data;
 
+    // Sprawdzanie, czy użytkownik już istnieje
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: "User already exists" },
         { status: 409 }
       );
     }
@@ -29,27 +43,27 @@ export async function POST(request: Request) {
     // Haszowanie hasła
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Tworzenie nowego użytkownika
+    // Tworzenie nowego użytkownika (domyślnie rola "user", jeśli nie podano)
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         username,
-        role,
+        role: UserRole.CUSTOMER,
       },
     });
 
     // Generowanie JWT
-    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const secret = process.env.JWT_SECRET || "your-secret-key";
     const jwt = await new SignJWT({ userId: user.id })
       .setIssuedAt()
-      .setExpirationTime('1h')
-      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setExpirationTime("1h")
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .sign(new TextEncoder().encode(secret));
 
-    // Zapisanie tokenu w ciasteczkach
+    // Ustawienie tokenu w ciasteczku
     const response = NextResponse.json({
-      message: 'User created successfully',
+      message: "User created successfully",
       user: {
         id: user.id,
         email: user.email,
@@ -57,19 +71,19 @@ export async function POST(request: Request) {
         role: user.role,
       },
     });
-    response.cookies.set('token', jwt, {
+    response.cookies.set("token", jwt, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 60 * 60 * 2, // 2 godziny
-      path: '/',
+      path: "/",
     });
 
     return response;
   } catch (error: any) {
     console.error("Error creating user:", error);
     return NextResponse.json(
-      { error: 'Error creating user', details: error.message },
+      { error: "Error creating user", details: error.message },
       { status: 500 }
     );
   }

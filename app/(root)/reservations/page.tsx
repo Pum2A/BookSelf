@@ -1,142 +1,186 @@
+// app/bookings/page.tsx
 "use client";
-
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/stores/userStore";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, PlusCircle } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface Booking {
-  id: number;
+  id: string;
   bookingTime: string;
   numberOfPeople: number;
-  status: string;
-  firmName: string;
-  menuItemName?: string;
+  status: "confirmed" | "pending" | "cancelled";
+  serviceName: string;
+  businessName: string;
 }
 
 export default function BookingsPage() {
   const router = useRouter();
   const { user } = useUserStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showBookings, setShowBookings] = useState(true); // Domyślnie pokazujemy rezerwacje
+  const [viewMode, setViewMode] = useState<"current" | "new">("current");
 
   useEffect(() => {
-    if (!user) {
-      setError("Musisz być zalogowany, aby zobaczyć rezerwacje.");
-      return;
-    }
-
     const fetchBookings = async () => {
       try {
-        const res = await fetch("/api/bookings");
-        if (!res.ok) throw new Error("Nie udało się pobrać rezerwacji.");
-        const data = await res.json();
+        if (!user) {
+          setError("Authentication required");
+          return;
+        }
+
+        const response = await fetch("/api/bookings", {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch bookings");
+        }
+
+        const data = await response.json();
         setBookings(data);
       } catch (err: any) {
         setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchBookings();
   }, [user]);
 
-  const handleCancel = async (id: number) => {
-    if (!confirm("Czy na pewno chcesz anulować tę rezerwację?")) return;
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
 
     try {
-      const response = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
 
-      if (!response.ok) throw new Error("Nie udało się anulować rezerwacji.");
+      if (!response.ok) {
+        throw new Error("Cancellation failed");
+      }
 
-      alert("Rezerwacja została anulowana.");
-      setBookings((prev) => prev.filter((booking) => booking.id !== id));
+      setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+      toast.success("Booking cancelled successfully");
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || "Cancellation failed");
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-8 bg-white shadow rounded">
-      <h1 className="text-3xl font-bold mb-6 text-center">Rezerwacje</h1>
-
-      <div className="flex justify-center space-x-4 mb-6">
-        <button
-          onClick={() => setShowBookings(true)}
-          className={`py-2 px-4 rounded ${
-            showBookings ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12 text-center"
         >
-          Moje rezerwacje
-        </button>
-        <button
-          onClick={() => setShowBookings(false)}
-          className={`py-2 px-4 rounded ${
-            !showBookings ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
-        >
-          Zarezerwuj usługę
-        </button>
-      </div>
+          <h1 className="text-4xl font-bold text-text mb-4">
+            Booking Management
+          </h1>
+          <div className="flex justify-center gap-4">
+            <Button
+              variant={viewMode === "current" ? "default" : "outline"}
+              onClick={() => setViewMode("current")}
+            >
+              Current Bookings
+            </Button>
+          </div>
+        </motion.div>
 
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <Loader2 className="mx-auto h-8 w-8 text-accents animate-spin" />
+          </div>
+        )}
 
-      {showBookings ? (
-        bookings.length ? (
-          <ul className="space-y-6">
-            {bookings.map((booking) => (
-              <li key={booking.id} className="border p-4 rounded bg-gray-50">
-                <p className="text-lg font-semibold">{booking.firmName}</p>
-                {booking.menuItemName && (
-                  <p className="text-sm text-gray-600">
-                    Usługa: {booking.menuItemName}
-                  </p>
-                )}
-                <p>
-                  <span className="font-semibold">Data i godzina:</span>{" "}
-                  {new Date(booking.bookingTime).toLocaleString()}
-                </p>
-                <p>
-                  <span className="font-semibold">Liczba osób:</span>{" "}
-                  {booking.numberOfPeople}
-                </p>
-                <p>
-                  <span className="font-semibold">Status:</span>{" "}
-                  {booking.status}
-                </p>
-                <div className="flex space-x-4 mt-4">
-                  <button
-                    onClick={() => router.push(`/bookings/${booking.id}/edit`)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
-                  >
-                    Edytuj
-                  </button>
-                  <button
-                    onClick={() => handleCancel(booking.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition"
-                  >
-                    Anuluj
-                  </button>
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12 text-red-500">Error: {error}</div>
+        )}
+
+        {/* Bookings List */}
+        <AnimatePresence>
+          {!loading && !error && viewMode === "current" && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid gap-6"
+            >
+              {bookings.length === 0 ? (
+                <div className="text-center py-12 text-secondText">
+                  No upcoming bookings found
                 </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-center">Brak rezerwacji.</p>
-        )
-      ) : (
-        <div className="text-center">
-          <p className="mb-4 text-gray-700">
-            Kliknij poniżej, aby zarezerwować usługę.
-          </p>
-          <Link
-            href="/bookings"
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition"
-          >
-            Zarezerwuj
-          </Link>
-        </div>
-      )}
+              ) : (
+                bookings.map((booking) => (
+                  <motion.div
+                    key={booking.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="p-6 bg-sections rounded-xl border border-border/50 hover:border-accents/30 transition-all"
+                  >
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+                      <div className="space-y-2 flex-1">
+                        <h3 className="text-xl font-semibold text-text">
+                          {booking.serviceName}
+                        </h3>
+                        <p className="text-secondText">
+                          {new Date(booking.bookingTime).toLocaleString()}
+                        </p>
+                        <div className="flex gap-2 items-center">
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm ${
+                              booking.status === "confirmed"
+                                ? "bg-green-500/10 text-green-500"
+                                : booking.status === "pending"
+                                ? "bg-yellow-500/10 text-yellow-500"
+                                : "bg-red-500/10 text-red-500"
+                            }`}
+                          >
+                            {booking.status}
+                          </span>
+                          <span className="text-secondText">
+                            {booking.numberOfPeople} people
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push(`/bookings/${booking.id}`)}
+                        >
+                          Details
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleCancelBooking(booking.id)}
+                          disabled={booking.status === "cancelled"}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -1,23 +1,25 @@
 // app/api/auth/signout/route.ts
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
     // Usuwamy token z ciasteczek
-    const response = NextResponse.json({ message: 'Successfully signed out' }, { status: 200 });
+    const response = NextResponse.json(
+      { message: "Successfully signed out" },
+      { status: 200 }
+    );
     response.cookies.delete({
-      name: 'token',
-      path: '/',
-      sameSite: 'strict'
+      name: "token",
+      path: "/",
+      sameSite: "strict",
     });
 
-    // Zwracamy odpowiedź, że użytkownik został wylogowany
     return response;
   } catch (error) {
-    console.error('Error during signout:', error);
-
-    // Zwracamy błąd, jeśli coś poszło nie tak
-    return NextResponse.json({ message: 'Failed to sign out' }, { status: 500 });
+    console.error("Error during signout:", error);
+    return NextResponse.json(
+      { message: "Failed to sign out" },
+      { status: 500 }
+    );
   }
 }

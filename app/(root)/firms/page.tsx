@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { ChevronRightIcon } from "lucide-react";
 
 interface Firm {
   id: number;
@@ -35,42 +37,56 @@ export default function FirmsListPage() {
 
   return (
     <div className="container mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">Firmy</h1>
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+      <motion.h1
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-5xl font-bold mb-12 text-center bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent"
+      >
+        Manage Firms
+      </motion.h1>
 
-      <div className="flex justify-center mb-8">
+      {error && <p className="text-red-400 text-center mb-8">{error}</p>}
+
+      <div className="flex justify-center mb-12">
         <Link
           href="/firms/create"
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+          className="bg-accents hover:bg-accents-dark text-text py-3 px-8 rounded-xl transition-colors shadow-lg flex items-center gap-2"
         >
-          Utwórz nową firmę
+          <span>+</span> Create New Firm
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {firms.length === 0 && !error && (
-          <p className="text-gray-500 text-center">Brak dostępnych firm</p>
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {firms.map((firm) => (
-          <div
+          <motion.div
             key={firm.id}
-            className="bg-white rounded shadow p-6 hover:shadow-lg transition-shadow"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-sections rounded-2xl border border-border/50 p-8 hover:border-accents/30 transition-all"
           >
-            <h2 className="text-xl font-semibold mb-2">{firm.name}</h2>
-            <p className="text-gray-700 mb-2">{firm.description}</p>
-            <p className="text-gray-600 mb-1">
-              <strong>Lokalizacja:</strong> {firm.location}
-            </p>
-            <p className="text-gray-600 mb-4">
-              <strong>Godziny otwarcia:</strong> {firm.openingHours}
-            </p>
-            <Link
-              href={`/firms/${firm.id}`}
-              className="text-blue-500 hover:text-blue-600 font-medium"
-            >
-              Edycja
-            </Link>
-          </div>
+            <h2 className="text-2xl font-bold mb-4 text-text">{firm.name}</h2>
+            <p className="text-secondText mb-6">{firm.description}</p>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-secondText">
+                <span className="font-medium">Location:</span>
+                {firm.location}
+              </div>
+              <div className="flex items-center gap-2 text-secondText">
+                <span className="font-medium">Hours:</span>
+                {firm.openingHours}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Link
+                href={`/firms/${firm.id}`}
+                className="text-accents hover:text-accents-dark font-medium flex items-center gap-2"
+              >
+                Edit Details <ChevronRightIcon size={16} />
+              </Link>
+            </div>
+          </motion.div>
         ))}
       </div>
     </div>

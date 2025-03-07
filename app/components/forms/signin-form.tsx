@@ -13,17 +13,50 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "react-toastify";
-import { useSigninUser } from "@/hooks/useAuth";
+import DOMPurify from "dompurify";
+import { z } from "zod";
+
+// Schemat walidacji dla logowania
+const signinSchema = z.object({
+  email: z.string().email({ message: "Nieprawidłowy adres email" }),
+  password: z
+    .string()
+    .min(6, { message: "Hasło musi mieć przynajmniej 6 znaków" }),
+});
 
 export default function SigninForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { mutate, isPending } = useSigninUser(); // Używamy hooka
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    mutate({ email, password }); // Uruchamiamy mutację
+
+    // Walidacja danych przy użyciu Zod
+    const result = signinSchema.safeParse({ email, password });
+    if (!result.success) {
+      const errorMessage = result.error.errors
+        .map((err) => err.message)
+        .join(". ");
+      toast.error(DOMPurify.sanitize(errorMessage));
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Błąd logowania");
+      }
+      toast.success("Zalogowano pomyślnie!");
+      router.push("/home");
+    } catch (error: any) {
+      toast.error(DOMPurify.sanitize(error.message || "Błąd logowania"));
+    }
   };
 
   return (
@@ -66,10 +99,9 @@ export default function SigninForm() {
           <CardFooter className="flex flex-col gap-3">
             <button
               type="submit"
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
-              disabled={isPending}
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200"
             >
-              {isPending ? "Signing In..." : "Sign In"}
+              Sign In
             </button>
             <p className="text-center text-sm text-gray-500">
               Don't have an account?{" "}

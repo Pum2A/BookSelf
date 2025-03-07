@@ -1,104 +1,134 @@
 "use client";
+
+import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   AiOutlineInfoCircle,
   AiOutlineTeam,
   AiOutlineSafety,
 } from "react-icons/ai";
+import { Button } from "@/components/ui/button";
+
+const features = [
+  {
+    icon: AiOutlineInfoCircle,
+    title: "Comprehensive Details",
+    description:
+      "Access detailed service information with real-time availability updates and transparent pricing.",
+  },
+  {
+    icon: AiOutlineTeam,
+    title: "Expert Support",
+    description:
+      "24/7 customer support team ready to assist you with any queries or issues.",
+  },
+  {
+    icon: AiOutlineSafety,
+    title: "Secure Transactions",
+    description:
+      "Bank-grade encryption ensures all your transactions and data remain protected.",
+  },
+];
 
 export default function About() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen w-full text-white my-16 lg:my-16 px-4 mx-auto max-w-screen-xl">
-      {/* Header */}
-      <div className="flex flex-col text-center mb-12 mx-auto">
-        <h1 className="text-5xl font-bold leading-tight">
-          About <span className="text-green-400">BookSelf</span>
-        </h1>
-        <p className="text-lg text-gray-400 mt-4 max-w-screen-sm mx-auto">
-          Discover how BookSelf can transform your booking experience and make
-          your life easier.
-        </p>
-      </div>
-
-      {/* About Section */}
-      <div className="flex flex-col lg:flex-row items-center justify-between mt-16 w-full max-w-screen-xl gap-12 mx-auto">
-        {/* Left Image */}
-        <div className="w-full lg:w-1/3">
-          <Image
-            src="/bookAbout.svg" // Example image path
-            alt="About BookSelf"
-            width={300} // Smaller size
-            height={300} // Adjusted height
-            className="w-full h-auto rounded-lg shadow-lg"
-          />
-        </div>
-
-        {/* Right Text */}
-        <div className="w-full lg:w-2/3 text-center lg:text-left">
-          <h2 className="text-3xl font-bold mb-4">
-            Empowering Your Booking Experience
-          </h2>
-          <p className="text-lg text-gray-400 mb-6 leading-relaxed">
-            BookSelf is designed to simplify your life by offering a seamless
-            and intuitive platform for booking a wide range of services. Whether
-            you're booking your next stay, event, or an appointment, we make it
-            quick and secure.
+    <main className="min-h-screen w-full text-text py-24 px-4 sm:px-8">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-20 space-y-6"
+        >
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent">
+            About BookSelf
+          </h1>
+          <p className="text-xl text-secondText max-w-3xl mx-auto leading-relaxed">
+            Revolutionizing the way you book services with cutting-edge
+            technology and user-centric design principles.
           </p>
-          <p className="text-lg text-gray-400 leading-relaxed">
-            We strive to provide the most user-friendly booking experience for
-            individuals and businesses alike. Join our growing community of
-            users today!
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="relative h-96 rounded-3xl overflow-hidden shadow-2xl"
+          >
+            <Image
+              src="/about-hero.jpg"
+              alt="About BookSelf"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            <h2 className="text-4xl font-bold">Empowering Modern Bookings</h2>
+            <p className="text-lg text-secondText leading-relaxed">
+              Our platform combines intuitive design with powerful features to
+              create seamless booking experiences. Whether you're managing
+              personal appointments or business reservations, BookSelf adapts to
+              your needs.
+            </p>
+            <div className="flex gap-4">
+              <Button className="bg-accents hover:bg-accents-dark text-text rounded-xl px-8 py-6 text-lg">
+                Get Started
+              </Button>
+              <Button
+                variant="outline"
+                className="border-border text-text hover:bg-sections rounded-xl px-8 py-6 text-lg"
+              >
+                Learn More
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+
+        <section className="mb-24">
+          <h3 className="text-4xl font-bold text-center mb-16">
+            Why Choose BookSelf?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.2 }}
+                className="p-8 bg-sections rounded-2xl border border-border/50 hover:border-accents/30 transition-all"
+              >
+                <div className="w-14 h-14 mb-6 flex items-center justify-center bg-accents/10 rounded-xl">
+                  <feature.icon className="w-8 h-8 text-accents" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-3">{feature.title}</h3>
+                <p className="text-secondText leading-relaxed">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-gradient-to-r from-accents/10 to-transparent rounded-2xl p-12 text-center border border-accents/20"
+        >
+          <h3 className="text-3xl font-bold mb-6">Start Your Journey Today</h3>
+          <p className="text-secondText mb-8 max-w-2xl mx-auto">
+            Join thousands of satisfied users who have transformed their booking
+            experience with BookSelf.
           </p>
-        </div>
-      </div>
-
-      {/* Features Section */}
-      <section className="mt-16 w-full max-w-screen-xl mx-auto text-center">
-        <h3 className="text-3xl font-bold mb-8">Why Choose Us?</h3>
-        <div className="flex flex-col lg:flex-row justify-center gap-8">
-          <div className="w-full lg:w-1/3 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <AiOutlineInfoCircle
-              size={48}
-              className="text-green-400 mb-4 mx-auto"
-            />
-            <h4 className="text-2xl font-semibold text-gray-300 mb-4">
-              Reliable Information
-            </h4>
-            <p className="text-lg text-gray-400">
-              Our platform ensures that you always have access to up-to-date and
-              accurate information for your bookings.
-            </p>
-          </div>
-          <div className="w-full lg:w-1/3 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <AiOutlineTeam size={48} className="text-green-400 mb-4 mx-auto" />
-            <h4 className="text-2xl font-semibold text-gray-300 mb-4">
-              Dedicated Team
-            </h4>
-            <p className="text-lg text-gray-400">
-              Our support team is always ready to assist with any inquiries or
-              issues you may face during your booking journey.
-            </p>
-          </div>
-          <div className="w-full lg:w-1/3 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <AiOutlineSafety
-              size={48}
-              className="text-green-400 mb-4 mx-auto"
-            />
-            <h4 className="text-2xl font-semibold text-gray-300 mb-4">
-              Secure Payments
-            </h4>
-            <p className="text-lg text-gray-400">
-              Pay securely through our trusted payment system.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Call-to-Action Button */}
-      <div className="mt-12 text-center">
-        <button className="px-8 py-3 bg-green-400 text-gray-800 hover:bg-green-500 transition rounded-lg">
-          Get Started Today
-        </button>
+          <Button className="bg-accents hover:bg-accents-dark text-text rounded-xl px-10 py-7 text-lg shadow-lg">
+            Create Free Account
+          </Button>
+        </motion.div>
       </div>
     </main>
   );

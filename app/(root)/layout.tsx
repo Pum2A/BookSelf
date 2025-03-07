@@ -45,7 +45,7 @@ export default async function RootLayout({
   return (
     <QueryProvider>
       <MenuProvider>
-        <div className="flex w-auto">
+        <div className="flex-grow ml-0 lg:ml-72">
           <UserProvider user={user} />
           <Sidebar
             isLoggedIn={!!user} // Przekazujemy informację, czy użytkownik jest zalogowany

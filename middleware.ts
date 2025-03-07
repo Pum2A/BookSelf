@@ -9,7 +9,7 @@ const secret = new TextEncoder().encode(
 // Definiowanie dozwolonych ścieżek dla każdej roli
 const roleAccess = {
   OWNER: ["/firms", "/home"],
-  CUSTOMER: ["/firms", "/home", "/bookings"],
+  CUSTOMER: ["/home", "/bookings"],
   ADMIN: ["/firms", "/home", "/bookings", "/admin"],
 };
 
@@ -25,7 +25,17 @@ export async function middleware(request: NextRequest) {
     const role = payload.role as keyof typeof roleAccess;
     const url = request.nextUrl.pathname;
 
-    // Sprawdzanie, czy użytkownik ma dostęp do danej ścieżki
+    // Specjalna reguła dla właściciela (OWNER może wejść do bookings/create, ale nie do bookings)
+    if (role === "OWNER") {
+      if (url === "/bookings") {
+        return NextResponse.redirect(new URL("/access-denied", request.url));
+      }
+      if (url.startsWith("/bookings/")) {
+        return NextResponse.redirect(new URL("/access-denied", request.url));
+      }
+    }
+
+    // Sprawdzanie dozwolonych ścieżek wg przypisanych allowedPaths
     const allowedPaths = roleAccess[role] || [];
     const hasAccess = allowedPaths.some((path) => url.startsWith(path));
 
@@ -41,5 +51,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/firms/:path*", "/home", "/bookings", "/admin"],
+  matcher: [
+    "/firms/:path*",
+    "/home",
+    "/bookings",
+    "/bookings/:path*",
+    "/admin",
+  ],
 };

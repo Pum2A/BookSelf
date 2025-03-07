@@ -1,16 +1,16 @@
-import { create } from 'zustand';
+// stores/userStore.ts
+import { create } from "zustand";
 
 type User = {
-    id: number;
-    username: string;
-    email: string;
-    password: string;
-    createdAt: Date;
-    bio?: string;  // Dodanie bio jako opcjonalne pole
-    avatar?: string;
-    role: string;
-
-  };
+  id: number;
+  username: string;
+  email: string;
+  token: string; // Added token field
+  createdAt: Date;
+  bio?: string;
+  avatar?: string;
+  role: string;
+};
 
 type UserStore = {
   user: User | null;
@@ -18,12 +18,11 @@ type UserStore = {
   updateUserRole: (role: string) => void;
 };
 
-
 export const useUserStore = create<UserStore>((set) => ({
   user: null,
   setUser: (user) => set({ user }),
-  updateUserRole: (role) => 
+  updateUserRole: (role) =>
     set((state) => ({
-      user: state.user ? { ...state.user, role } : null
+      user: state.user ? { ...state.user, role } : null,
     })),
 }));

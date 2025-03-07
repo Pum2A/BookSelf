@@ -59,63 +59,72 @@ export default function EditMenuItemPage() {
     }
   };
 
-  if (loading) return <div className="text-center p-8">Ładowanie...</div>;
+  if (loading)
+    return <div className="text-center p-8 text-text">Ładowanie...</div>;
   if (error) return <div className="text-center text-red-500 p-8">{error}</div>;
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white shadow rounded">
-      <h1 className="text-3xl font-bold mb-6 text-center">Edytuj usługę</h1>
+    <div className="max-w-2xl mx-auto p-8 bg-background shadow rounded-lg">
+      <h1 className="text-3xl font-bold mb-6 text-center text-text">
+        Edytuj usługę
+      </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Pole nazwa */}
         <div>
-          <label className="block mb-2 font-semibold">Nazwa usługi</label>
+          <label className="block mb-2 font-semibold text-text">
+            Nazwa usługi
+          </label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full border border-gray-300 rounded px-4 py-2"
             required
+            className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
           />
         </div>
 
         {/* Pole opis */}
         <div>
-          <label className="block mb-2 font-semibold">Opis</label>
+          <label className="block mb-2 font-semibold text-text">Opis</label>
           <textarea
             value={formData.description}
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            className="w-full border border-gray-300 rounded px-4 py-2 h-32"
+            className="w-full border border-border rounded-lg px-4 py-2 h-32 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
           />
         </div>
 
         {/* Pole cena */}
         <div>
-          <label className="block mb-2 font-semibold">Cena (PLN)</label>
+          <label className="block mb-2 font-semibold text-text">
+            Cena (PLN)
+          </label>
           <input
             type="number"
             value={formData.price}
             onChange={(e) =>
               setFormData({ ...formData, price: e.target.value })
             }
-            className="w-full border border-gray-300 rounded px-4 py-2"
             required
+            className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
           />
         </div>
 
         {/* Pole kategoria */}
         <div>
-          <label className="block mb-2 font-semibold">Kategoria</label>
+          <label className="block mb-2 font-semibold text-text">
+            Kategoria
+          </label>
           <input
             type="text"
             value={formData.category}
             onChange={(e) =>
               setFormData({ ...formData, category: e.target.value })
             }
-            className="w-full border border-gray-300 rounded px-4 py-2"
             required
+            className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
           />
         </div>
 
@@ -123,7 +132,7 @@ export default function EditMenuItemPage() {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition"
+          className="w-full bg-accents hover:bg-accents-dark text-white py-3 rounded-lg transition"
         >
           Zapisz zmiany
         </button>

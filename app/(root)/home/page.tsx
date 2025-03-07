@@ -1,171 +1,137 @@
+// components/HomePage.tsx
 "use client";
-import { useUserStore } from "@/stores/userStore";
-import Image from "next/image";
+import { motion } from "framer-motion";
+import { useTheme } from "../contexts/ThemeProvider";
 import { AiOutlineSearch } from "react-icons/ai";
-import {
-  AiOutlineAppstore,
-  AiOutlineClockCircle,
-  AiOutlineSafety,
-} from "react-icons/ai";
+import Image from "next/image";
 
 export default function HomePage() {
-  const { user } = useUserStore();
+  const { theme } = useTheme();
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen w-full text-white my-16 lg:my-16 px-4 mx-auto max-w-screen-xl">
-      {/* Nagłówek */}
-      {user ? <p>Zalogowany jako: {user.username}</p> : <p>Nie zalogowany</p>}
-      <div className="flex flex-col text-center mb-12 mx-auto">
-        <h1 className="text-5xl font-bold leading-tight">
-          Discover and Book{" "}
-          <span className="text-green-400">Your Favorites</span>
-        </h1>
-        <p className="text-lg text-gray-400 mt-4 max-w-screen-sm mx-auto">
-          Your one-stop solution for managing bookings, finding services, and
-          keeping track of your favorites. Start exploring now and make your
-          life easier!
-        </p>
-      </div>
-
-      {/* Wyszukiwarka */}
-      <div className="flex w-full max-w-lg bg-gray-700 shadow-md rounded-lg overflow-hidden mb-12 mx-auto">
-        <input
-          type="text"
-          className="flex-grow px-4 py-3 text-gray-300 bg-transparent placeholder-gray-500 outline-none"
-          placeholder="Search for services or places..."
-        />
-        <button className="px-4 py-3 bg-green-400 text-gray-800 hover:bg-green-500 transition">
-          <AiOutlineSearch size={24} />
-        </button>
-      </div>
-
-      {/* Sekcja zachęcająca */}
-      <div className="flex flex-col lg:flex-row items-center justify-between mt-16 w-full max-w-screen-xl gap-12 mx-auto">
-        {/* Obrazek z lewej */}
-        <div className="w-full lg:w-1/2">
-          <Image
-            src="/imageMain.png" // Ścieżka do obrazka
-            alt="Booking Illustration"
-            width={600} // Podaj szerokość
-            height={400} // Podaj wysokość
-            className="w-full h-auto rounded-lg shadow-lg"
-          />
-        </div>
-
-        {/* Tekst z prawej */}
-        <div className="w-full lg:w-1/2 text-center lg:text-left">
-          <h2 className="text-3xl font-bold mb-4">
-            Why Choose <span className="text-green-400">BookSelf?</span>
-          </h2>
-          <p className="text-lg text-gray-400 mb-6 leading-relaxed">
-            BookSelf makes it simple to find and book the best services, whether
-            it’s a cozy coffee shop, an exciting event, or your next vacation
-            spot. Save time, stay organized, and enjoy a seamless booking
-            experience.
-          </p>
-          <p className="text-lg text-gray-400 leading-relaxed">
-            Join thousands of satisfied users and make every moment count.
-          </p>
-        </div>
-      </div>
-
-      {/* Sekcja Testimonials (Opinie) */}
-      <section className="mt-16 w-full max-w-screen-xl mx-auto text-center">
-        <h3 className="text-3xl font-bold mb-8">What Our Users Say</h3>
-        <div className="flex flex-wrap gap-8 justify-center">
-          <div className="w-full md:w-1/3 text-center p-4 bg-gray-700 rounded-lg shadow-md">
-            <p className="text-lg text-gray-400 mb-4">
-              "This is the best app I’ve ever used! It makes booking so easy!"
-            </p>
-            <span className="text-lg text-green-400 font-semibold">
-              John Doe
+    <section className="relative min-h-screen py-24 bg-background overflow-hidden">
+      <div className="container mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-3xl mx-auto text-center mb-20"
+        >
+          <div className="inline-block bg-accents/10 px-6 py-2 rounded-full mb-6">
+            <span className="text-accents text-sm">
+              🚀 Discover Premium Services
             </span>
           </div>
-          <div className="w-full md:w-1/3 text-center p-4 bg-gray-700 rounded-lg shadow-md">
-            <p className="text-lg text-gray-400 mb-4">
-              "I love how intuitive and fast the booking process is!"
-            </p>
-            <span className="text-lg text-green-400 font-semibold">
-              Jane Smith
+          <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-text to-accents bg-clip-text text-transparent">
+            Elevate Your
+            <span className="block mt-4 bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent">
+              Experience
             </span>
-          </div>
-        </div>
-      </section>
+          </h1>
+        </motion.div>
 
-      {/* Sekcja Features (Funkcje) */}
-      <section className="mt-16 w-full max-w-screen-xl mx-auto text-center">
-        <h3 className="text-3xl font-bold mb-8">Features</h3>
-        <div className="flex flex-col lg:flex-row justify-center gap-8">
-          <div className="w-full lg:w-1/3 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <AiOutlineAppstore
-              size={48}
-              className="text-green-400 mb-4 mx-auto"
+        {/* Search Section */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-2xl mx-auto mb-20"
+        >
+          <div className="flex w-full bg-sections shadow-xl rounded-xl overflow-hidden border border-border/50">
+            <input
+              type="text"
+              className="flex-grow px-6 py-4 bg-transparent text-text placeholder-secondText outline-none"
+              placeholder="Find premium services..."
             />
-            <h4 className="text-2xl font-semibold text-gray-300 mb-4">
-              Easy to Use
-            </h4>
-            <p className="text-lg text-gray-400">
-              Our app is intuitive and simple, making bookings a breeze.
-            </p>
+            <button className="px-6 py-4 bg-accents hover:bg-accents-dark text-text transition-colors">
+              <AiOutlineSearch size={24} />
+            </button>
           </div>
-          <div className="w-full lg:w-1/3 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <AiOutlineClockCircle
-              size={48}
-              className="text-green-400 mb-4 mx-auto"
-            />
-            <h4 className="text-2xl font-semibold text-gray-300 mb-4">
-              Instant Booking
-            </h4>
-            <p className="text-lg text-gray-400">
-              Book services or places in just a few clicks.
-            </p>
-          </div>
-          <div className="w-full lg:w-1/3 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <AiOutlineSafety
-              size={48}
-              className="text-green-400 mb-4 mx-auto"
-            />
-            <h4 className="text-2xl font-semibold text-gray-300 mb-4">
-              Secure Payments
-            </h4>
-            <p className="text-lg text-gray-400">
-              Pay securely through our trusted payment system.
-            </p>
-          </div>
-        </div>
-      </section>
+        </motion.div>
 
-      {/* Sekcja FAQ */}
-      <section className="mt-16 w-full max-w-screen-xl mx-auto text-center">
-        <h3 className="text-3xl font-bold mb-8">Frequently Asked Questions</h3>
-        <div className="space-y-6">
-          <details className="bg-gray-700 p-4 rounded-lg">
-            <summary className="text-xl font-semibold text-gray-300">
-              How can I book a service?
-            </summary>
-            <p className="text-lg text-gray-400">
-              Simply search for the service or place you want to book and follow
-              the prompts.
-            </p>
-          </details>
-          <details className="bg-gray-700 p-4 rounded-lg">
-            <summary className="text-xl font-semibold text-gray-300">
-              Is my payment information secure?
-            </summary>
-            <p className="text-lg text-gray-400">
-              Yes, we use SSL encryption and trusted payment processors to keep
-              your information safe.
-            </p>
-          </details>
-        </div>
-      </section>
+        {/* Featured Section */}
+        <div className="grid lg:grid-cols-2 gap-12 items-center mb-24">
+          <motion.div
+            initial={{ x: -100, opacity: 0 }}
+            whileInView={{ x: 0, opacity: 1 }}
+            className="relative group rounded-3xl overflow-hidden border border-border/50"
+          >
+            <Image
+              src="/imageMain.png"
+              width={600}
+              height={400}
+              alt="Services"
+              className="w-full h-auto"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/30 to-transparent" />
+          </motion.div>
 
-      {/* Call-to-Action Button */}
-      <div className="mt-12 text-center">
-        <button className="px-8 py-3 bg-green-400 text-gray-800 hover:bg-green-500 transition rounded-lg">
-          Start Booking Now
-        </button>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent">
+              Why Choose Us?
+            </h2>
+            <p className="text-xl text-secondText leading-relaxed">
+              Experience seamless service booking with our curated selection of
+              premium providers and intelligent matching system.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                "Instant Booking",
+                "Verified Providers",
+                "Secure Payments",
+                "24/7 Support",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="p-4 bg-sections rounded-xl border border-border hover:border-accents/30 transition-colors"
+                >
+                  <div className="h-2 w-2 rounded-full bg-accents mb-2" />
+                  <span className="text-text">{item}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Features Grid */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          className="grid md:grid-cols-3 gap-8"
+        >
+          {[
+            {
+              icon: "🚀",
+              title: "Fast Booking",
+              desc: "Instant reservations with real-time availability",
+            },
+            {
+              icon: "🛡️",
+              title: "Secure",
+              desc: "End-to-end encrypted transactions",
+            },
+            {
+              icon: "💎",
+              title: "Premium",
+              desc: "Curated selection of top providers",
+            },
+          ].map((feature, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ y: -5 }}
+              className="p-8 bg-sections rounded-2xl border border-border/50 hover:border-accents/30 transition-all"
+            >
+              <div className="text-4xl mb-4">{feature.icon}</div>
+              <h3 className="text-2xl font-semibold mb-2 text-text">
+                {feature.title}
+              </h3>
+              <p className="text-secondText">{feature.desc}</p>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
-    </main>
+    </section>
   );
 }

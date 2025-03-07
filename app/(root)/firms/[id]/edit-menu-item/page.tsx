@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getCookie } from "cookies-next";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
 
 export default function EditMenuItemPage() {
   const router = useRouter();
@@ -30,12 +30,10 @@ export default function EditMenuItemPage() {
           setError("Brak ID usługi");
           return;
         }
-
         const response = await fetch(`/api/menu-items/${itemId}`);
         if (!response.ok) {
           throw new Error("Nie udało się pobrać danych usługi");
         }
-
         const data = await response.json();
         setFormData({
           name: data.name,
@@ -50,48 +48,36 @@ export default function EditMenuItemPage() {
         setLoading(false);
       }
     };
-
     fetchMenuItem();
   }, [itemId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
 
     try {
       const token = getCookie("token");
-      if (!token) {
-        throw new Error("Brak autoryzacji");
-      }
-
-      // Walidacja danych
+      if (!token) throw new Error("Brak autoryzacji");
       if (!formData.name || !formData.price || !formData.category) {
         throw new Error("Wypełnij wszystkie wymagane pola");
       }
-
       const numericPrice = Number(formData.price);
       if (isNaN(numericPrice) || numericPrice <= 0) {
         throw new Error("Nieprawidłowa cena");
       }
-
       const response = await fetch(`/api/menu-items/${itemId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...formData,
-          price: numericPrice,
-        }),
+        body: JSON.stringify({ ...formData, price: numericPrice }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Błąd aktualizacji");
       }
-
       router.push(`/firms/${id}`);
     } catch (err: any) {
       setError(err.message || "Nie udało się zaktualizować usługi");
@@ -123,9 +109,11 @@ export default function EditMenuItemPage() {
   }
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-2xl mx-auto my-8">
       <CardHeader>
-        <CardTitle className="text-2xl">Edytuj usługę</CardTitle>
+        <CardTitle className="text-3xl font-bold text-text">
+          Edytuj usługę
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -138,7 +126,6 @@ export default function EditMenuItemPage() {
               }
               required
             />
-
             <Textarea
               placeholder="Opis"
               value={formData.description}
@@ -146,7 +133,6 @@ export default function EditMenuItemPage() {
                 setFormData({ ...formData, description: e.target.value })
               }
             />
-
             <Input
               type="number"
               placeholder="Cena (PLN)"
@@ -156,7 +142,6 @@ export default function EditMenuItemPage() {
               }
               required
             />
-
             <Input
               placeholder="Kategoria"
               value={formData.category}
@@ -166,13 +151,11 @@ export default function EditMenuItemPage() {
               required
             />
           </div>
-
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <div className="flex gap-4 justify-end">
             <Button
               variant="outline"
@@ -181,7 +164,6 @@ export default function EditMenuItemPage() {
             >
               Anuluj
             </Button>
-
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
