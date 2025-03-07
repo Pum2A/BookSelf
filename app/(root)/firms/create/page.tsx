@@ -3,11 +3,39 @@
 import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/stores/userStore";
+import { toast } from "react-toastify";
+import DOMPurify from "dompurify";
+import { z } from "zod";
+
+const firmSchema = z.object({
+  name: z
+    .string()
+    .min(3, "Nazwa musi mieć minimum 3 znaki")
+    .max(50, "Nazwa może mieć maksymalnie 50 znaków")
+    .regex(/^[a-zA-Z0-9\sąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/, "Niedozwolone znaki w nazwie"),
+  description: z
+    .string()
+    .min(10, "Opis musi mieć minimum 10 znaków")
+    .max(500, "Opis może mieć maksymalnie 500 znaków"),
+  location: z
+    .string()
+    .min(3, "Lokalizacja musi mieć minimum 3 znaki")
+    .regex(
+      /^[a-zA-Z\sąćęłńóśźżĄĆĘŁŃÓŚŹŻ-]+$/,
+      "Nieprawidłowy format lokalizacji"
+    ),
+  openingHours: z
+    .string()
+    .regex(
+      /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      "Format HH:MM-HH:MM"
+    ),
+  address: z.string().min(5, "Adres musi mieć minimum 5 znaków"),
+});
 
 export default function CreateFirmPage() {
   const router = useRouter();
   const { user } = useUserStore();
-
   const [newFirm, setNewFirm] = useState({
     name: "",
     description: "",
@@ -15,32 +43,66 @@ export default function CreateFirmPage() {
     openingHours: "",
     address: "",
   });
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateField = (field: string, value: string) => {
+    const result = firmSchema.safeParse({ ...newFirm, [field]: value });
+    if (!result.success) {
+      const fieldError = result.error.errors.find((e) =>
+        e.path.includes(field)
+      )?.message;
+      setErrors((prev) => ({ ...prev, [field]: fieldError || "" }));
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleChange =
+    (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setNewFirm((prev) => ({ ...prev, [field]: value }));
+      validateField(field, value);
+    };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const result = firmSchema.safeParse(newFirm);
 
-    if (!user) {
-      setError("Musisz być zalogowany, aby dodać firmę.");
+    if (!result.success) {
+      const newErrors = result.error.errors.reduce((acc, curr) => {
+        acc[curr.path[0]] = curr.message;
+        return acc;
+      }, {} as Record<string, string>);
+      setErrors(newErrors);
       return;
     }
 
-    const response = await fetch("/api/firms", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...newFirm, ownerId: user.id }),
-    });
+    if (!user) {
+      toast.error(
+        DOMPurify.sanitize("Musisz być zalogowany, aby dodać firmę.")
+      );
+      return;
+    }
 
-    if (response.ok) {
+    try {
+      const response = await fetch("/api/firms", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newFirm, ownerId: user.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Błąd tworzenia firmy");
+      }
+
       const createdFirm = await response.json();
-      alert("Firma została utworzona");
+      toast.success("Firma została utworzona pomyślnie!");
       router.push(`/firms/${createdFirm.firm.id}`);
-    } else {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: "Unknown error" }));
-      setError(errorData.message || "Błąd tworzenia firmy");
+    } catch (error: any) {
+      toast.error(DOMPurify.sanitize(error.message));
     }
   };
 
@@ -50,29 +112,35 @@ export default function CreateFirmPage() {
         <h1 className="text-3xl font-bold text-center mb-6 text-text">
           Utwórz nową firmę
         </h1>
-        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-text font-semibold mb-2">Nazwa:</label>
             <input
               type="text"
               value={newFirm.name}
-              onChange={(e) => setNewFirm({ ...newFirm, name: e.target.value })}
-              required
+              onChange={handleChange("name")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+              maxLength={50}
             />
+            {errors.name && (
+              <p className="text-red-400 text-sm mt-1">{errors.name}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-text font-semibold mb-2">Opis:</label>
             <textarea
               value={newFirm.description}
-              onChange={(e) =>
-                setNewFirm({ ...newFirm, description: e.target.value })
-              }
-              required
+              onChange={handleChange("description")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
-            ></textarea>
+              maxLength={500}
+            />
+            {errors.description && (
+              <p className="text-red-400 text-sm mt-1">{errors.description}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-text font-semibold mb-2">
               Lokalizacja:
@@ -80,39 +148,43 @@ export default function CreateFirmPage() {
             <input
               type="text"
               value={newFirm.location}
-              onChange={(e) =>
-                setNewFirm({ ...newFirm, location: e.target.value })
-              }
-              required
+              onChange={handleChange("location")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
             />
+            {errors.location && (
+              <p className="text-red-400 text-sm mt-1">{errors.location}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-text font-semibold mb-2">
-              Godziny otwarcia:
+              Godziny otwarcia (HH:MM-HH:MM):
             </label>
             <input
               type="text"
               value={newFirm.openingHours}
-              onChange={(e) =>
-                setNewFirm({ ...newFirm, openingHours: e.target.value })
-              }
-              required
+              onChange={handleChange("openingHours")}
+              placeholder="np. 08:00-16:00"
               className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
             />
+            {errors.openingHours && (
+              <p className="text-red-400 text-sm mt-1">{errors.openingHours}</p>
+            )}
           </div>
+
           <div>
             <label className="block text-text font-semibold mb-2">Adres:</label>
             <input
               type="text"
               value={newFirm.address}
-              onChange={(e) =>
-                setNewFirm({ ...newFirm, address: e.target.value })
-              }
-              required
+              onChange={handleChange("address")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
             />
+            {errors.address && (
+              <p className="text-red-400 text-sm mt-1">{errors.address}</p>
+            )}
           </div>
+
           <button
             type="submit"
             className="w-full bg-accents hover:bg-accents-dark text-white py-3 rounded-lg transition-colors"

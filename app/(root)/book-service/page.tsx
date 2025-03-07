@@ -3,6 +3,27 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import DOMPurify from "dompurify";
+import { z } from "zod";
+
+const bookingSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+    message: "Nieprawidłowy format daty",
+  }),
+  selectedSlot: z.string().min(1, {
+    message: "Wybierz godzinę rezerwacji",
+  }),
+  numberOfPeople: z.number().min(1, {
+    message: "Liczba osób musi wynosić co najmniej 1",
+  }),
+  firmId: z.string().min(1, {
+    message: "Wymagane ID firmy",
+  }),
+  menuItemId: z.string().min(1, {
+    message: "Wymagane ID usługi",
+  }),
+});
 
 export default function BookServicePage() {
   const searchParams = useSearchParams();
@@ -14,22 +35,19 @@ export default function BookServicePage() {
   const [selectedSlot, setSelectedSlot] = useState("");
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [date, setDate] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   const fetchAvailableSlots = async (selectedDate: string) => {
     if (!firmId || !selectedDate) return;
-    const res = await fetch(
-      `/api/bookings/available?firmId=${firmId}&date=${selectedDate}`,
-      {
-        credentials: "include",
-      }
-    );
-    if (res.ok) {
+    try {
+      const res = await fetch(
+        `/api/bookings/available?firmId=${firmId}&date=${selectedDate}`,
+        { credentials: "include" }
+      );
+      if (!res.ok) throw new Error("Błąd pobierania slotów");
       const data = await res.json();
       setAvailableSlots(data.availableSlots);
-    } else {
-      const data = await res.json();
-      setError(data.message || "Błąd pobierania dostępnych slotów");
+    } catch (error: any) {
+      toast.error(DOMPurify.sanitize(error.message));
     }
   };
 
@@ -47,28 +65,46 @@ export default function BookServicePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSlot) {
-      setError("Wybierz godzinę rezerwacji");
+
+    const validationResult = bookingSchema.safeParse({
+      date,
+      selectedSlot,
+      numberOfPeople,
+      firmId: firmId || "",
+      menuItemId: menuItemId || "",
+    });
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors
+        .map((err) => err.message)
+        .join(". ");
+      toast.error(DOMPurify.sanitize(errorMessage));
       return;
     }
-    const bookingDateTime = new Date(`${date}T${selectedSlot}`);
-    const response = await fetch("/api/bookings", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        bookingTime: bookingDateTime,
-        numberOfPeople,
-        firmId,
-        menuItemId,
-      }),
-    });
-    if (response.ok) {
-      alert("Rezerwacja utworzona!");
+
+    try {
+      const bookingDateTime = new Date(`${date}T${selectedSlot}`);
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingTime: bookingDateTime,
+          numberOfPeople,
+          firmId,
+          menuItemId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Błąd tworzenia rezerwacji");
+      }
+
+      toast.success("Rezerwacja utworzona pomyślnie!");
       router.push("/bookings");
-    } else {
-      const data = await response.json();
-      setError(data.message || "Błąd podczas tworzenia rezerwacji");
+    } catch (error: any) {
+      toast.error(DOMPurify.sanitize(error.message));
     }
   };
 
@@ -81,7 +117,6 @@ export default function BookServicePage() {
       <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-accents to-accents-dark bg-clip-text text-transparent">
         Book Your Service
       </h1>
-      {error && <p className="text-red-400 text-center mb-6">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
