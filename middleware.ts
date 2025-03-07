@@ -6,10 +6,9 @@ const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || "default_secret_key"
 );
 
-// Definiowanie dozwolonych ścieżek dla każdej roli
 const roleAccess = {
   OWNER: ["/firms", "/home"],
-  CUSTOMER: ["/home", "/bookings"],
+  CUSTOMER: ["/"], // Allows access to all paths except /firms
   ADMIN: ["/firms", "/home", "/bookings", "/admin"],
 };
 
@@ -25,17 +24,28 @@ export async function middleware(request: NextRequest) {
     const role = payload.role as keyof typeof roleAccess;
     const url = request.nextUrl.pathname;
 
-    // Specjalna reguła dla właściciela (OWNER może wejść do bookings/create, ale nie do bookings)
-    if (role === "OWNER") {
-      if (url === "/bookings") {
+    // Handle CUSTOMER: block access to /firms
+    if (role === "CUSTOMER") {
+      if (url.startsWith("/firms")) {
         return NextResponse.redirect(new URL("/access-denied", request.url));
       }
-      if (url.startsWith("/bookings/")) {
-        return NextResponse.redirect(new URL("/access-denied", request.url));
-      }
+      return NextResponse.next();
     }
 
-    // Sprawdzanie dozwolonych ścieżek wg przypisanych allowedPaths
+    // Handle OWNER: block access to /bookings and /reservations
+    if (role === "OWNER") {
+      if (url.startsWith("/bookings") || url.startsWith("/reservations")) {
+        return NextResponse.redirect(new URL("/access-denied", request.url));
+      }
+      const allowedPaths = roleAccess[role];
+      const hasAccess = allowedPaths.some((path) => url.startsWith(path));
+      if (!hasAccess) {
+        return NextResponse.redirect(new URL("/access-denied", request.url));
+      }
+      return NextResponse.next();
+    }
+
+    // Handle ADMIN and other roles
     const allowedPaths = roleAccess[role] || [];
     const hasAccess = allowedPaths.some((path) => url.startsWith(path));
 
@@ -45,7 +55,7 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    console.error("🔴 Nieprawidłowy token:", error);
+    console.error("🔴 Invalid token:", error);
     return NextResponse.redirect(new URL("/signin", request.url));
   }
 }
@@ -56,6 +66,8 @@ export const config = {
     "/home",
     "/bookings",
     "/bookings/:path*",
+    "/reservations",
+    "/reservations/:path*",
     "/admin",
   ],
 };
