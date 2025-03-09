@@ -1,6 +1,5 @@
 # 🚀 BookSelf - Platforma Rezerwacji Usług
 
-![BookSelf Banner](https://via.placeholder.com/1200x400?text=📅+Book+Your+Services+Now+🚀)
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.1.7-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0.0-61DAFB?logo=react&logoColor=white)](https://react.dev/)
