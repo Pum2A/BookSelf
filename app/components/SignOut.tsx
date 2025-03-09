@@ -15,10 +15,10 @@ export function SignOutButton() {
       // Przekierowanie po wylogowaniu, np. na stronę logowania
       router.refresh();
       router.push("/signin");
-      toast.success("Signed out successfully");
+      toast.success("Wylogowano poprawnie!");
     } catch (error) {
       console.error("Error signing out", error);
-      toast.error("Failed to sign out");
+      toast.success("Nie udało się wylogować!");
     }
   };
 

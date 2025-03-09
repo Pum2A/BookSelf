@@ -26,9 +26,11 @@ export async function middleware(request: NextRequest) {
 
     // Handle CUSTOMER: block access to /firms
     if (role === "CUSTOMER") {
+      // Blokuj dostęp do panelu właściciela
       if (url.startsWith("/firms")) {
         return NextResponse.redirect(new URL("/access-denied", request.url));
       }
+      // Pozwól na dostęp do wszystkich innych ścieżek
       return NextResponse.next();
     }
 

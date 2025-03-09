@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import { Metadata } from "next";
 import "../globals.css";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "sonner";
 import QueryProvider from "./contexts/QueryProvider";
 import { ToastContainer } from "react-toastify";
 import { getUserFromToken } from "@/utils/GetUserFromToken";

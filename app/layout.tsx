@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import "./globals.css";
 import "react-toastify/dist/ReactToastify.css";
 import QueryProvider from "./(root)/contexts/QueryProvider";
-import { ToastContainer } from "react-toastify";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,7 +25,7 @@ export default async function RootLayout({
       <body className="font-sans">
         <QueryProvider>
           {children}
-          <ToastContainer />
+          <Toaster position="top-right" richColors closeButton />
         </QueryProvider>
       </body>
     </html>

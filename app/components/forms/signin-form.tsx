@@ -12,9 +12,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import { z } from "zod";
+import { toast } from "sonner";
+import { error } from "console";
 
 // Schemat walidacji dla logowania
 const signinSchema = z.object({
@@ -38,7 +39,10 @@ export default function SigninForm() {
       const errorMessage = result.error.errors
         .map((err) => err.message)
         .join(". ");
-      toast.error(DOMPurify.sanitize(errorMessage));
+      toast.error("Błąd Walidacji", {
+        description: errorMessage,
+      });
+
       return;
     }
 
@@ -52,10 +56,14 @@ export default function SigninForm() {
         const data = await res.json();
         throw new Error(data.error || "Błąd logowania");
       }
-      toast.success("Zalogowano pomyślnie!");
+      toast.success("Konto poprawnie zalogowane!", {
+        description: "Za chwilę zostaniesz przekierowany na stronę główną",
+      });
       router.push("/home");
     } catch (error: any) {
-      toast.error(DOMPurify.sanitize(error.message || "Błąd logowania"));
+      toast.error("Błąd logowania", {
+        description: error.message,
+      });
     }
   };
 

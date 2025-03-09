@@ -56,7 +56,7 @@ export default function About() {
             className="relative h-96 rounded-3xl overflow-hidden shadow-2xl"
           >
             <Image
-              src="/about-hero.jpg"
+              src="/bookAbout.svg"
               alt="About BookSelf"
               fill
               className="object-cover"

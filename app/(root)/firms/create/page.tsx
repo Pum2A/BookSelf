@@ -3,7 +3,7 @@
 import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/stores/userStore";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import DOMPurify from "dompurify";
 import { z } from "zod";
 

@@ -55,7 +55,10 @@ export async function POST(request: Request) {
 
     // Generowanie JWT
     const secret = process.env.JWT_SECRET || "your-secret-key";
-    const jwt = await new SignJWT({ userId: user.id })
+    const jwt = await new SignJWT({
+      userId: user.id,
+      role: user.role,
+    })
       .setIssuedAt()
       .setExpirationTime("1h")
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })

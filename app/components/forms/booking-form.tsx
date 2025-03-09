@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface BookingFormProps {
   firmId: number;
@@ -25,10 +26,11 @@ export default function BookingForm({ firmId }: BookingFormProps) {
     });
 
     if (response.ok) {
-      alert("Rezerwacja utworzona!");
+      toast.success("Rezerwacja utworzona poprawnie!");
       router.push("/bookings"); // Przykładowa strona z listą rezerwacji
     } else {
       const data = await response.json();
+      toast.success("Rezerwacja utworzona niepoprawnie!");
       setError(data.message || "Błąd podczas tworzenia rezerwacji");
     }
   };

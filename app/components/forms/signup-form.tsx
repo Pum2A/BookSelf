@@ -12,11 +12,10 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import { z } from "zod";
+import { toast } from "sonner";
 
-// Definiujemy schemat walidacji przy użyciu Zod
 const signupSchema = z.object({
   email: z.string().email({ message: "Nieprawidłowy adres email" }),
   username: z
@@ -36,13 +35,14 @@ export default function SignUpForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Walidacja danych przy użyciu Zod
     const result = signupSchema.safeParse({ email, username, password });
     if (!result.success) {
       const errorMessage = result.error.errors
         .map((err) => err.message)
         .join(". ");
-      toast.error(DOMPurify.sanitize(errorMessage));
+
+      toast.error("Błąd Walidacji.");
+
       return;
     }
 
@@ -52,14 +52,21 @@ export default function SignUpForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, username, password }),
       });
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Błąd rejestracji");
       }
-      toast.success("Konto zostało utworzone!");
+
+      toast.success("Konto poprawnie utworzone!", {
+        description: "Za chwilę zostaniesz przekierowany na stronę główną",
+      });
+
       router.push("/home");
     } catch (error: any) {
-      toast.error(DOMPurify.sanitize(error.message || "Błąd rejestracji"));
+      toast.error("Konto nie zostało poprawnie utworzone!", {
+        description: "Spróbuj ponownie!",
+      });
     }
   };
 

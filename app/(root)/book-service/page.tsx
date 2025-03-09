@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import { z } from "zod";
+import { toast } from "sonner";
 
 const bookingSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
@@ -30,7 +30,8 @@ export default function BookServicePage() {
   const router = useRouter();
   const firmId = searchParams.get("firmId");
   const menuItemId = searchParams.get("menuItemId");
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [numberOfPeople, setNumberOfPeople] = useState(1);
@@ -39,6 +40,7 @@ export default function BookServicePage() {
   const fetchAvailableSlots = async (selectedDate: string) => {
     if (!firmId || !selectedDate) return;
     try {
+      setIsLoading(true);
       const res = await fetch(
         `/api/bookings/available?firmId=${firmId}&date=${selectedDate}`,
         { credentials: "include" }
@@ -48,6 +50,8 @@ export default function BookServicePage() {
       setAvailableSlots(data.availableSlots);
     } catch (error: any) {
       toast.error(DOMPurify.sanitize(error.message));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -63,8 +67,15 @@ export default function BookServicePage() {
     fetchAvailableSlots(newDate);
   };
 
+  const Loader = () => (
+    <div className="flex justify-center py-8">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-accents border-t-transparent"></div>
+    </div>
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const validationResult = bookingSchema.safeParse({
       date,
@@ -105,6 +116,8 @@ export default function BookServicePage() {
       router.push("/bookings");
     } catch (error: any) {
       toast.error(DOMPurify.sanitize(error.message));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -138,20 +151,28 @@ export default function BookServicePage() {
             Available Slots
           </label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {availableSlots.map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => setSelectedSlot(slot)}
-                className={`p-3 rounded-lg text-center transition-all ${
-                  selectedSlot === slot
-                    ? "bg-accents text-text"
-                    : "bg-background text-secondText hover:bg-sections/50"
-                }`}
-              >
-                {slot}
-              </button>
-            ))}
+            {isLoading ? (
+              <Loader />
+            ) : availableSlots.length === 0 ? (
+              <div className="col-span-full text-center text-secondText py-4">
+                Brak dostępnych terminów
+              </div>
+            ) : (
+              availableSlots.map((slot) => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => setSelectedSlot(slot)}
+                  className={`p-3 rounded-lg text-center transition-all ${
+                    selectedSlot === slot
+                      ? "bg-accents text-text"
+                      : "bg-background text-secondText hover:bg-sections/50"
+                  }`}
+                >
+                  {slot}
+                </button>
+              ))
+            )}
           </div>
         </div>
 

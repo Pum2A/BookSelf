@@ -6,7 +6,7 @@ import { useUserStore } from "@/stores/userStore";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, PlusCircle } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 interface Booking {
   id: string;

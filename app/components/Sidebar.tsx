@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/stores/userStore";
 import { useMenu } from "../(root)/contexts/MenuContext";
@@ -21,6 +20,7 @@ import {
   MenuIcon,
   ChevronRightIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface UserData {
   avatar: string;
@@ -104,15 +104,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
         body: JSON.stringify({ userId: user?.id }),
       });
       if (response.ok) {
-        toast.success("You are now an OWNER!");
-        useUserStore.getState().updateUserRole("OWNER");
+        toast.success("Jesteś OWNEREM!");
+        const update = useUserStore.getState().updateUserRole;
+        update("OWNER");
         router.refresh();
       } else {
-        toast.error("Failed to upgrade account");
+        toast.error("Nie udało sie zupgradować konta!");
       }
     } catch (error) {
       console.error("Become OWNER error:", error);
-      toast.error("Error upgrading account");
+      toast.error("Nie udało sie zupgradować konta!");
     }
   };
 

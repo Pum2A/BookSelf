@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 export default function ContactPage() {
   const [message, setMessage] = useState("");
