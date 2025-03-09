@@ -1,6 +1,6 @@
 // utils/auth.ts
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export async function handleSignOut() {
   const router = useRouter();
