@@ -2,8 +2,8 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import SigninForm from "@/app/components/forms/signin-form";
 import { Lock, Sparkles, UserCheck } from "lucide-react";
+import AuthForm from "@/app/components/forms/auth-form";
 
 export default function SignInRoute() {
   return (
@@ -56,7 +56,7 @@ export default function SignInRoute() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-text">
-                  150k+ Zadowolonych Klientów
+                  Wiele Zadowolonych Klientów
                 </h3>
                 <p className="text-secondText">
                   Dołącz do społeczności profesjonalistów
@@ -83,7 +83,7 @@ export default function SignInRoute() {
             <p className="text-secondText">Zaloguj się, aby kontynuować</p>
           </div>
 
-          <SigninForm />
+          <AuthForm type={"signin"} />
 
           <div className="text-center"></div>
         </div>

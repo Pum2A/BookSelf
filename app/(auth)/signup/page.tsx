@@ -2,8 +2,8 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import SignUpForm from "@/app/components/forms/signup-form";
 import { BookOpen, CalendarCheck, Shield } from "lucide-react";
+import AuthForm from "@/app/components/forms/auth-form";
 
 export default function SignUpRoute() {
   return (
@@ -56,7 +56,7 @@ export default function SignUpRoute() {
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-text">
-                  +500 Zaufanych Partnerów
+                  Dobra opinia
                 </h3>
                 <p className="text-secondText">
                   Dołącz do najlepszych specjalistów w branży
@@ -85,7 +85,7 @@ export default function SignUpRoute() {
             </p>
           </div>
 
-          <SignUpForm />
+          <AuthForm type={"signup"} />
 
           <div className="text-center text-sm text-secondText">
             Rejestrując się akceptujesz{" "}
