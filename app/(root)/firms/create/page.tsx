@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
 import DOMPurify from "dompurify";
 import { z } from "zod";
+
+const MAX_FILE_SIZE = 5000000; // 5MB
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
 
 const firmSchema = z.object({
   name: z
@@ -31,11 +39,23 @@ const firmSchema = z.object({
       "Format HH:MM-HH:MM"
     ),
   address: z.string().min(5, "Adres musi mieć minimum 5 znaków"),
+  image: z
+    .instanceof(File)
+    .refine(
+      (file) => file.size <= MAX_FILE_SIZE,
+      "Maksymalny rozmiar pliku to 5MB"
+    )
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Akceptowane formaty: .jpg, .jpeg, .png, .webp"
+    )
+    .optional(),
 });
 
 export default function CreateFirmPage() {
   const router = useRouter();
   const { user } = useUserStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newFirm, setNewFirm] = useState({
     name: "",
     description: "",
@@ -43,9 +63,12 @@ export default function CreateFirmPage() {
     openingHours: "",
     address: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const validateField = (field: string, value: string) => {
+  const validateField = (field: string, value: string | File) => {
     const result = firmSchema.safeParse({ ...newFirm, [field]: value });
     if (!result.success) {
       const fieldError = result.error.errors.find((e) =>
@@ -65,9 +88,39 @@ export default function CreateFirmPage() {
       validateField(field, value);
     };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setImageFile(file);
+
+    if (file) {
+      validateField("image", file);
+
+      // Create image preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const result = firmSchema.safeParse(newFirm);
+    setIsSubmitting(true);
+
+    // Validate all fields
+    const dataToValidate = { ...newFirm };
+    if (imageFile) {
+      Object.assign(dataToValidate, { image: imageFile });
+    }
+
+    const result = firmSchema.safeParse(dataToValidate);
 
     if (!result.success) {
       const newErrors = result.error.errors.reduce((acc, curr) => {
@@ -75,6 +128,7 @@ export default function CreateFirmPage() {
         return acc;
       }, {} as Record<string, string>);
       setErrors(newErrors);
+      setIsSubmitting(false);
       return;
     }
 
@@ -82,15 +136,30 @@ export default function CreateFirmPage() {
       toast.error(
         DOMPurify.sanitize("Musisz być zalogowany, aby dodać firmę.")
       );
+      setIsSubmitting(false);
       return;
     }
 
     try {
+      const formData = new FormData();
+      // Add all firm data to formData
+      Object.entries(newFirm).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+
+      // Add owner ID
+      formData.append("ownerId", user.id.toString());
+
+      // Add image if exists
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
       const response = await fetch("/api/firms", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newFirm, ownerId: user.id }),
+        // Don't set Content-Type header when using FormData
+        body: formData,
       });
 
       if (!response.ok) {
@@ -103,6 +172,8 @@ export default function CreateFirmPage() {
       router.push(`/firms/${createdFirm.firm.id}`);
     } catch (error: any) {
       toast.error(DOMPurify.sanitize(error.message));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -185,11 +256,60 @@ export default function CreateFirmPage() {
             )}
           </div>
 
+          <div>
+            <label className="block text-text font-semibold mb-2">
+              Zdjęcie:
+            </label>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageChange}
+              className="hidden"
+              accept=".jpg,.jpeg,.png,.webp"
+            />
+            <div
+              onClick={handleImageClick}
+              className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-accents transition-colors"
+            >
+              {imagePreview ? (
+                <div className="flex flex-col items-center">
+                  <img
+                    src={imagePreview}
+                    alt="Podgląd zdjęcia firmy"
+                    className="max-h-48 max-w-full mb-2 rounded"
+                  />
+                  <p className="text-sm text-gray-400">
+                    Kliknij, aby zmienić zdjęcie
+                  </p>
+                </div>
+              ) : (
+                <div className="py-8">
+                  <p className="text-gray-400">
+                    Kliknij, aby dodać zdjęcie firmy
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Akceptowane formaty: JPG, PNG, WebP (max 5MB)
+                  </p>
+                </div>
+              )}
+            </div>
+            {errors.image && (
+              <p className="text-red-400 text-sm mt-1">{errors.image}</p>
+            )}
+          </div>
+
           <button
             type="submit"
-            className="w-full bg-accents hover:bg-accents-dark text-white py-3 rounded-lg transition-colors"
+            disabled={isSubmitting}
+            className={`w-full ${
+              isSubmitting ? "bg-gray-600" : "bg-accents hover:bg-accents-dark"
+            } text-white py-3 rounded-lg transition-colors flex justify-center`}
           >
-            Utwórz firmę
+            {isSubmitting ? (
+              <span>Tworzenie...</span>
+            ) : (
+              <span>Utwórz firmę</span>
+            )}
           </button>
         </form>
       </div>

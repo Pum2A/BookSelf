@@ -1,8 +1,8 @@
-// /** @type {import('next').NextConfig} */
-// const nextConfig = {
-//   experimental: {
-//     appDir: true,
-//   },
-// };
-
-// module.exports = nextConfig;
+module.exports = {
+  // ...inne ustawienia
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
+};

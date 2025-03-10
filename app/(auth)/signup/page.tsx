@@ -89,13 +89,14 @@ export default function SignUpRoute() {
 
           <div className="text-center text-sm text-secondText">
             Rejestrując się akceptujesz{" "}
-            <Link href="/terms" className="text-accents hover:underline">
+            <Link href="#" className="text-accents hover:underline">
               Regulamin
             </Link>{" "}
             i{" "}
-            <Link href="/privacy" className="text-accents hover:underline">
+            <Link href="#" className="text-accents hover:underline">
               Politykę Prywatności
             </Link>
+            (prototype1.0.0)
           </div>
         </div>
       </motion.div>

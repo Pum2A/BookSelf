@@ -92,9 +92,9 @@ export default function AuthForm({ type }: AuthFormProps) {
   return (
     <div className="max-w-md w-full">
       <form onSubmit={handleSubmit}>
-        <Card className="shadow-lg border border-gray-200">
+        <Card className="shadow-lg border-2 border-gray-500">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-3xl font-bold">
+            <CardTitle className="text-3xl font-bold ">
               {type === "signup" ? "Create Account" : "Welcome Back"}
             </CardTitle>
             <CardDescription>

@@ -1,7 +1,10 @@
-import { jwtVerify, JWTPayload } from "jose";
+import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { PrismaClient } from "@prisma/client";
+import { writeFile, mkdir } from "fs/promises";
+import { join, dirname } from "path";
+import { existsSync } from "fs";
 
 const prisma = new PrismaClient();
 const secret = new TextEncoder().encode(
@@ -91,9 +94,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Pobierz dane firmy z body zapytania
-    const { name, description, location, address, openingHours } =
-      await request.json();
+    // Parse the FormData from the request
+    const formData = await request.formData();
+
+    // Extract form fields
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const location = formData.get("location") as string;
+    const address = formData.get("address") as string;
+    const openingHours = formData.get("openingHours") as string;
+    const image = formData.get("image") as File | null;
 
     console.log("Dane firmy:", {
       name,
@@ -101,6 +111,7 @@ export async function POST(request: Request) {
       location,
       address,
       openingHours,
+      image: image ? "Plik obrazu" : "Brak obrazu",
     });
 
     // Sprawdzenie, czy wszystkie dane są przekazane
@@ -112,6 +123,33 @@ export async function POST(request: Request) {
       );
     }
 
+    let imagePath = null;
+
+    // Handle image upload if image exists
+    if (image && image instanceof File) {
+      const bytes = await image.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      // Create unique filename with timestamp and random string
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 12);
+      const fileExtension = image.name.split(".").pop();
+      const fileName = `firm_${timestamp}_${randomString}.${fileExtension}`;
+
+      // Create directory for firm images if it doesn't exist
+      const uploadsDir = join(process.cwd(), "public", "uploads", "firms");
+      if (!existsSync(uploadsDir)) {
+        await mkdir(uploadsDir, { recursive: true });
+      }
+
+      // Set path for storing the image and save it
+      const filePath = join(uploadsDir, fileName);
+      await writeFile(filePath, buffer);
+
+      // Set the path that will be stored in the database
+      imagePath = `/uploads/firms/${fileName}`;
+    }
+
     // Tworzenie firmy w bazie danych
     const newFirm = await prisma.firm.create({
       data: {
@@ -120,7 +158,8 @@ export async function POST(request: Request) {
         location,
         address,
         openingHours,
-        ownerId: payload.userId, // Teraz TypeScript wie, że userId to number
+        imagePath, // Add the image path to the database
+        ownerId: payload.userId,
       },
     });
 
@@ -151,4 +190,3 @@ export async function POST(request: Request) {
     );
   }
 }
-export {};
