@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { PrismaClient } from "@prisma/client";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
-
-const prisma = new PrismaClient();
+import prisma from "@/app/lib/prisma";
 const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || "default_secret_key"
 );
@@ -33,9 +31,18 @@ export async function GET(request: NextRequest) {
     // Weryfikacja tokenu
     let payload: JwtPayload;
     try {
-      const { payload: verifiedPayload } = await jwtVerify(token, secret);
-      payload = verifiedPayload as unknown as JwtPayload;
+      const verifyResult = await jwtVerify(token, secret);
+      if (!verifyResult.payload || typeof verifyResult.payload !== "object") {
+        throw new Error("Invalid token payload");
+      }
+      payload = verifyResult.payload as unknown as JwtPayload;
+
+      // Validate that required fields exist
+      if (!payload.userId || !payload.role) {
+        throw new Error("Missing required token fields");
+      }
     } catch (error) {
+      console.error("Token verification error:", error);
       return NextResponse.json(
         { success: false, message: "Nieprawidłowy lub wygasły token." },
         { status: 401 }
@@ -47,31 +54,32 @@ export async function GET(request: NextRequest) {
     const searchTerm = searchParams.get("search") || "";
     const category = searchParams.get("category") || "all";
 
-    const where: any = {
-      AND: [],
-      ...(payload.role === "OWNER" && { ownerId: payload.userId }),
-    };
+    // Prepare the where condition
+    let where: any = {};
 
-    if (searchTerm) {
-      where.AND.push({
-        OR: [
-          { name: { contains: searchTerm, mode: "insensitive" } },
-          { description: { contains: searchTerm, mode: "insensitive" } },
-        ],
-      });
+    // Add owner filter if role is OWNER
+    if (payload.role === "OWNER") {
+      where.ownerId = payload.userId;
     }
 
+    // Add search condition if searchTerm exists
+    if (searchTerm) {
+      where.OR = [
+        { name: { contains: searchTerm, mode: "insensitive" } },
+        { description: { contains: searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    // Add category filter if not "all"
     if (category !== "all") {
-      where.AND.push({
-        menuItems: {
-          some: {
-            category: {
-              equals: category,
-              mode: "insensitive",
-            },
+      where.menuItems = {
+        some: {
+          category: {
+            equals: category,
+            mode: "insensitive",
           },
         },
-      });
+      };
     }
 
     const skip = (page - 1) * ITEMS_PER_PAGE;
@@ -120,12 +128,17 @@ export async function POST(request: NextRequest) {
 
     let payload: JwtPayload;
     try {
-      const { payload: verifiedPayload } = await jwtVerify(token, secret);
-      payload = verifiedPayload as unknown as JwtPayload;
-      if (!payload?.userId || !payload?.role) {
-        throw new Error("Nieprawidłowy token");
+      const verifyResult = await jwtVerify(token, secret);
+      if (!verifyResult.payload || typeof verifyResult.payload !== "object") {
+        throw new Error("Invalid token payload");
+      }
+      payload = verifyResult.payload as unknown as JwtPayload;
+
+      if (!payload.userId || !payload.role) {
+        throw new Error("Missing required token fields");
       }
     } catch (error) {
+      console.error("Token verification error:", error);
       return NextResponse.json(
         { success: false, message: "Nieprawidłowy lub wygasły token." },
         { status: 401 }

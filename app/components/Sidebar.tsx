@@ -178,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
       </motion.button>
 
       <motion.div
-        className="fixed top-0 left-0 h-screen w-72 bg-background/95 backdrop-blur-2xl border-r border-border/20 z-50 flex flex-col shadow-2xl"
+        className="fixed top-0 left-0 h-screen w-72 bg-background/95 backdrop-blur-lg border-r border-border/20 z-50 flex flex-col shadow-2xl"
         initial={false}
         animate={menuOpen || isDesktop ? "open" : "closed"}
         variants={{
