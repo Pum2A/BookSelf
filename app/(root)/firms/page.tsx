@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, Loader, Loader2 } from "lucide-react";
 
 interface Firm {
   id: number;
@@ -16,24 +16,53 @@ interface Firm {
 
 export default function FirmsListPage() {
   const [firms, setFirms] = useState<Firm[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/firms")
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) {
-          // Rzucamy błędem z komunikatem z serwera
-          throw new Error(data.message || "Błąd pobierania danych");
+    const fetchFirms = async () => {
+      try {
+        const response = await fetch("/api/firms");
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return data;
-      })
-      .then((data) => setFirms(data))
-      .catch((err) => {
-        console.error(err);
-        setError(err.message);
-      });
+
+        const result = await response.json();
+
+        // Dodaj walidację odpowiedzi
+        if (!Array.isArray(result.data)) {
+          throw new Error("Nieprawidłowy format danych");
+        }
+
+        setFirms(result.data);
+      } catch (err) {
+        console.error("Błąd pobierania firm:", err);
+        setError(err instanceof Error ? err.message : "Nieznany błąd");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFirms();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin w-10 h-10 text-accents" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500 bg-red-100 rounded-lg max-w-2xl mx-auto mt-8">
+        <h2 className="text-xl font-bold mb-2">Błąd ładowania</h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-8">

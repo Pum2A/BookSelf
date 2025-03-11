@@ -1,3 +1,4 @@
+// app/api/menu-items/categories/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
@@ -5,22 +6,18 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    // Pobieramy unikalne kategorie z tabeli MenuItem
-    const items = await prisma.menuItem.findMany({
-      distinct: ["category"],
+    const categories = await prisma.menuItem.findMany({
       select: { category: true },
+      distinct: ["category"],
     });
-
-    // Mapujemy wyniki do tablicy stringów
-    const categories = items.map((item) => item.category).filter(Boolean);
 
     return NextResponse.json({
       success: true,
-      categories,
+      categories: categories.map((c) => c.category),
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { success: false, message: error.message || "Błąd pobierania kategorii" },
+      { success: false, message: "Błąd pobierania kategorii" },
       { status: 500 }
     );
   }

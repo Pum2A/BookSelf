@@ -26,8 +26,8 @@ interface Firm {
 }
 
 interface ApiResponse {
-  message: string;
   success: boolean;
+  message?: string;
   data: Firm[];
   pagination: {
     total: number;
@@ -46,48 +46,50 @@ export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Pobieranie kategorii (tylko raz)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("/api/categories");
+        const res = await fetch("/api/menu-items/categories");
         const data = await res.json();
         if (data.success) {
           setCategories(data.categories);
         }
       } catch (err) {
-        console.error("Failed to fetch categories:", err);
+        console.error("Błąd pobierania kategorii:", err);
       }
     };
 
     fetchCategories();
   }, []);
 
-  // Funkcja pobierająca dane firm z filtrami
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
         search: searchTerm,
-        category: selectedCategory !== "all" ? selectedCategory : "",
+        category: selectedCategory,
       });
 
       const res = await fetch(`/api/firms?${params}`);
-      // Jeśli odpowiedź nie jest OK, pobieramy tekst (z HTML) aby lepiej zdiagnozować problem
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to fetch data");
+        const errorText = await res.text();
+        throw new Error(errorText || `HTTP error! Status: ${res.status}`);
       }
+
       const responseData: ApiResponse = await res.json();
+
       if (!responseData.success) {
-        throw new Error(responseData.message || "Failed to fetch data");
+        throw new Error(responseData.message || "Błąd pobierania danych");
       }
+
       setData(responseData);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "An error occurred");
+      setError(err.message || "Wystąpił błąd podczas ładowania danych");
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,6 @@ export default function ServicesPage() {
     fetchData();
   }, [currentPage, searchTerm, selectedCategory]);
 
-  // Reset do pierwszej strony, gdy zmienią się filtry
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
@@ -167,13 +168,12 @@ export default function ServicesPage() {
       )}
 
       {loading ? (
-        // Spinner ładowania
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="animate-spin w-10 h-10 text-accents" />
         </div>
       ) : (
         <div className="grid gap-6 max-w-4xl mx-auto">
-          {data?.data.length ? (
+          {data?.data?.length ? (
             data.data.map((firm) => (
               <motion.div
                 key={firm.id}
@@ -190,7 +190,11 @@ export default function ServicesPage() {
                     >
                       {firm.imagePath ? (
                         <Image
-                          src={firm.imagePath}
+                          src={
+                            firm.imagePath.startsWith("/")
+                              ? firm.imagePath
+                              : `/${firm.imagePath}`
+                          }
                           alt={firm.name}
                           fill
                           sizes="(max-width: 768px) 100vw, 224px"
@@ -200,7 +204,7 @@ export default function ServicesPage() {
                         <div className="absolute inset-0 bg-gradient-to-br from-accents/10 to-accents/5 flex items-center justify-center">
                           <div className="text-secondText/40">
                             <Image
-                              src="/placeholder.jpg"
+                              src="/placeholder.svg"
                               width={64}
                               height={64}
                               alt="Brak zdjęcia"
@@ -300,7 +304,6 @@ export default function ServicesPage() {
             </motion.div>
           )}
 
-          {/* Pagination */}
           {(data?.pagination?.totalPages ?? 0) > 1 && (
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-8">
               <button
