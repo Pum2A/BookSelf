@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { PrismaClient } from "@prisma/client";
 import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { join, dirname } from "path";
 import { existsSync } from "fs";
-import prisma from "@/app/lib/prisma";
+
+const prisma = new PrismaClient();
 const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || "default_secret_key"
 );
@@ -19,7 +21,8 @@ interface JwtPayload {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = (await cookies()).get("token")?.value;
+    const cookieStore = cookies();
+    const token = (await cookieStore).get("token")?.value;
 
     if (!token) {
       return NextResponse.json(
@@ -31,57 +34,50 @@ export async function GET(request: NextRequest) {
     // Weryfikacja tokenu
     let payload: JwtPayload;
     try {
-      const verifyResult = await jwtVerify(token, secret);
-      if (!verifyResult.payload || typeof verifyResult.payload !== "object") {
-        throw new Error("Invalid token payload");
-      }
-      payload = verifyResult.payload as unknown as JwtPayload;
-
-      // Validate that required fields exist
-      if (!payload.userId || !payload.role) {
-        throw new Error("Missing required token fields");
-      }
+      const { payload: verifiedPayload } = await jwtVerify(token, secret);
+      payload = verifiedPayload as unknown as JwtPayload;
     } catch (error) {
-      console.error("Token verification error:", error);
       return NextResponse.json(
         { success: false, message: "Nieprawidłowy lub wygasły token." },
         { status: 401 }
       );
     }
 
+    // Pobierz parametry zapytania
     const searchParams = request.nextUrl.searchParams;
     const page = Number(searchParams.get("page")) || 1;
     const searchTerm = searchParams.get("search") || "";
     const category = searchParams.get("category") || "all";
 
-    // Prepare the where condition
-    let where: any = {};
+    // Budowanie warunków zapytania
+    const where: any = {
+      AND: [],
+      ...(payload.role === "OWNER" && { ownerId: payload.userId }),
+    };
 
-    // Add owner filter if role is OWNER
-    if (payload.role === "OWNER") {
-      where.ownerId = payload.userId;
-    }
-
-    // Add search condition if searchTerm exists
     if (searchTerm) {
-      where.OR = [
-        { name: { contains: searchTerm, mode: "insensitive" } },
-        { description: { contains: searchTerm, mode: "insensitive" } },
-      ];
+      where.AND.push({
+        OR: [
+          { name: { contains: searchTerm, mode: "insensitive" } },
+          { description: { contains: searchTerm, mode: "insensitive" } },
+        ],
+      });
     }
 
-    // Add category filter if not "all"
     if (category !== "all") {
-      where.menuItems = {
-        some: {
-          category: {
-            equals: category,
-            mode: "insensitive",
+      where.AND.push({
+        menuItems: {
+          some: {
+            category: {
+              equals: category,
+              mode: "insensitive",
+            },
           },
         },
-      };
+      });
     }
 
+    // Paginacja
     const skip = (page - 1) * ITEMS_PER_PAGE;
     const [firms, total] = await Promise.all([
       prisma.firm.findMany({
@@ -117,7 +113,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = (await cookies()).get("token")?.value;
+    const cookieStore = cookies();
+    const token = (await cookieStore).get("token")?.value;
 
     if (!token) {
       return NextResponse.json(
@@ -126,27 +123,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Weryfikacja tokenu
     let payload: JwtPayload;
     try {
-      const verifyResult = await jwtVerify(token, secret);
-      if (!verifyResult.payload || typeof verifyResult.payload !== "object") {
-        throw new Error("Invalid token payload");
-      }
-      payload = verifyResult.payload as unknown as JwtPayload;
-
-      if (!payload.userId || !payload.role) {
-        throw new Error("Missing required token fields");
+      const { payload: verifiedPayload } = await jwtVerify(token, secret);
+      payload = verifiedPayload as unknown as JwtPayload;
+      if (!payload?.userId || !payload?.role) {
+        throw new Error("Nieprawidłowy token");
       }
     } catch (error) {
-      console.error("Token verification error:", error);
       return NextResponse.json(
         { success: false, message: "Nieprawidłowy lub wygasły token." },
         { status: 401 }
       );
     }
 
+    // Przetwarzanie formularza
     const formData = await request.formData();
 
+    // Walidacja pól
     const requiredFields = [
       "name",
       "description",
@@ -169,6 +164,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ekstrakcja danych
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const location = formData.get("location") as string;
@@ -176,6 +172,7 @@ export async function POST(request: NextRequest) {
     const openingHours = formData.get("openingHours") as string;
     const image = formData.get("image") as File | null;
 
+    // Obsługa obrazu
     let imagePath = null;
     if (image && image.size > 0) {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -209,6 +206,7 @@ export async function POST(request: NextRequest) {
       imagePath = `/uploads/firms/${fileName}`;
     }
 
+    // Tworzenie firmy
     const newFirm = await prisma.firm.create({
       data: {
         name,
