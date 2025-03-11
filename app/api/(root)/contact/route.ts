@@ -1,44 +1,45 @@
-// app/api/contact/route.ts
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 
 export async function POST(request: Request) {
   const { email, message } = await request.json();
 
-  // Utwórz testowe konto Ethereal (używane tylko do celów deweloperskich)
-  const testAccount = await nodemailer.createTestAccount();
-
-  // Konfiguracja transportera z użyciem Ethereal
-  const transporter = nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  });
-
   try {
-    const mailOptions = {
-      from: `"Contact Form" <${email}>`, // email nadawcy będzie adresem wpisanym przez użytkownika
-      to: "dominikpum2a@gmail.com", // zamień na swój adres email
-      subject: `Wiadomość od ${email}`, // temat zawiera email nadawcy
-      text: message,
-      html: `<p>${message}</p>`,
-    };
+    const sendGridResponse = await fetch(
+      "https://api.sendgrid.com/v3/mail/send",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+        },
+        body: JSON.stringify({
+          personalizations: [
+            {
+              to: [{ email: "dominikpum2a@gmail.com" }],
+              subject: `Nowa wiadomość od ${email}`,
+            },
+          ],
+          from: { email: "noreply@example.com", name: "Formularz kontaktowy" },
+          content: [
+            {
+              type: "text/plain",
+              value: `Email: ${email}\nWiadomość:\n${message}`,
+            },
+          ],
+        }),
+      }
+    );
 
-    const info = await transporter.sendMail(mailOptions);
+    if (!sendGridResponse.ok) {
+      const error = await sendGridResponse.json();
+      throw new Error(error.errors[0]?.message || "Błąd SendGrid");
+    }
 
-    // Dla testów możesz uzyskać URL podglądu wiadomości (z Ethereal)
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log("Podgląd wiadomości:", previewUrl);
-
-    return NextResponse.json({ success: true, previewUrl });
-  } catch (error) {
-    console.error("Błąd podczas wysyłania maila:", error);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Błąd:", error);
     return NextResponse.json(
-      { error: "Wystąpił problem podczas wysyłki wiadomości" },
+      { error: error.message || "Wewnętrzny błąd serwera" },
       { status: 500 }
     );
   }
