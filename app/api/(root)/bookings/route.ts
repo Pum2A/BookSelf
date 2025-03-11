@@ -167,18 +167,10 @@ export async function GET(request: Request) {
 }
 
 // Modyfikujemy funkcję DELETE aby obsługiwała dynamiczne segmenty URL
-export async function DELETE(
-  request: Request,
-  { params }: { params: { bookingId?: string } }
-) {
-  // Obsługa obu formatów URL - dynamiczny segment i parametr
-  let bookingId = params?.bookingId;
-
-  // Jeśli nie ma w segmencie URL, sprawdź w parametrach zapytania
-  if (!bookingId) {
-    const url = new URL(request.url);
-    bookingId = url.searchParams.get("id") || undefined;
-  }
+// Replace your current DELETE function with this one
+export async function DELETE(request: Request) {
+  const url = new URL(request.url);
+  const bookingId = url.searchParams.get("id");
 
   if (!bookingId) {
     return NextResponse.json(
