@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Loader2, AlertCircle, Search, Filter } from "lucide-react";
@@ -25,57 +25,90 @@ interface Firm {
   menuItems: MenuItem[];
 }
 
+interface ApiResponse {
+  message: string;
+  success: boolean;
+  data: Firm[];
+  pagination: {
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    perPage: number;
+  };
+}
+
 export default function ServicesPage() {
-  const [firms, setFirms] = useState<Firm[]>([]);
+  const [data, setData] = useState<ApiResponse | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [firmsPerPage] = useState(6);
 
+  // Pobieranie kategorii (tylko raz)
   useEffect(() => {
-    const fetchFirms = async () => {
+    const fetchCategories = async () => {
       try {
-        const res = await fetch("/api/firms");
+        const res = await fetch("/api/categories");
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to fetch data");
-        setFirms(data);
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "An error occurred");
-      } finally {
-        setLoading(false);
+        if (data.success) {
+          setCategories(data.categories);
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
       }
     };
-    fetchFirms();
+
+    fetchCategories();
   }, []);
 
-  const filteredFirms = useMemo(() => {
-    return firms.filter((firm) => {
-      const matchesSearch =
-        firm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        firm.description.toLowerCase().includes(searchTerm.toLowerCase());
+  // Funkcja pobierająca dane firm z filtrami
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        search: searchTerm,
+        category: selectedCategory !== "all" ? selectedCategory : "",
+      });
 
-      const matchesCategory =
-        selectedCategory === "all" ||
-        firm.menuItems.some((item) => item.category === selectedCategory);
+      const res = await fetch(`/api/firms?${params}`);
+      // Jeśli odpowiedź nie jest OK, pobieramy tekst (z HTML) aby lepiej zdiagnozować problem
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to fetch data");
+      }
+      const responseData: ApiResponse = await res.json();
+      if (!responseData.success) {
+        throw new Error(responseData.message || "Failed to fetch data");
+      }
+      setData(responseData);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      return matchesSearch && matchesCategory;
-    });
-  }, [firms, searchTerm, selectedCategory]);
+  useEffect(() => {
+    fetchData();
+  }, [currentPage, searchTerm, selectedCategory]);
 
-  // Pagination logic
-  const indexOfLastFirm = currentPage * firmsPerPage;
-  const indexOfFirstFirm = indexOfLastFirm - firmsPerPage;
-  const currentFirms = filteredFirms.slice(indexOfFirstFirm, indexOfLastFirm);
-  const totalPages = Math.ceil(filteredFirms.length / firmsPerPage);
-
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
+  // Reset do pierwszej strony, gdy zmienią się filtry
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCategory(e.target.value);
+  };
 
   return (
     <div className="container mx-auto px-4 py-12 bg-background min-h-screen">
@@ -99,7 +132,7 @@ export default function ServicesPage() {
               <Input
                 placeholder="Wyszukaj usługę lub firmę..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearch}
                 className="rounded-xl py-5 pl-10 pr-4 h-19.5 text-base border-border/50 bg-background/50 hover:bg-background/70 focus:ring-2 focus:ring-accents/30 focus:border-accents/50 transition-all"
               />
             </div>
@@ -107,17 +140,11 @@ export default function ServicesPage() {
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondText/60 w-5 h-5 group-focus-within:text-accents transition-colors" />
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={handleCategoryChange}
                 className="rounded-xl py-5 h-19.5 pl-10 pr-4 text-base border-border/50 bg-background/50 hover:bg-background/70 focus:ring-2 focus:ring-accents/30 focus:border-accents/50 appearance-none transition-all w-full"
               >
                 <option value="all">Wszystkie kategorie</option>
-                {Array.from(
-                  new Set(
-                    firms.flatMap((firm) =>
-                      firm.menuItems.map((item) => item.category)
-                    )
-                  )
-                ).map((category) => (
+                {categories.map((category) => (
                   <option key={category} value={category}>
                     {category}
                   </option>
@@ -140,124 +167,123 @@ export default function ServicesPage() {
       )}
 
       {loading ? (
-        <div className="grid gap-6 max-w-4xl mx-auto">
-          {[...Array(3)].map((_, i) => (
-            <ServiceSkeleton key={i} />
-          ))}
+        // Spinner ładowania
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="animate-spin w-10 h-10 text-accents" />
         </div>
       ) : (
         <div className="grid gap-6 max-w-4xl mx-auto">
-          {currentFirms.map((firm) => (
-            <motion.div
-              key={firm.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="border border-border/20 rounded-2xl bg-background/50 backdrop-blur-sm hover:backdrop-blur-md shadow-sm hover:shadow-lg transition-all overflow-hidden group"
-            >
-              <div className="p-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    className="w-full md:w-56 h-44 relative rounded-xl overflow-hidden bg-sections/10 border border-border/20"
-                  >
-                    {firm.imagePath ? (
-                      <Image
-                        src={firm.imagePath}
-                        alt={firm.name}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 224px"
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-accents/10 to-accents/5 flex items-center justify-center">
-                        <div className="text-secondText/40">
-                          <Image
-                            src="/placeholder.svg"
-                            width={64}
-                            height={64}
-                            alt="Brak zdjęcia"
-                          />
+          {data?.data.length ? (
+            data.data.map((firm) => (
+              <motion.div
+                key={firm.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="border border-border/20 rounded-2xl bg-background/50 backdrop-blur-sm hover:backdrop-blur-md shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+              >
+                <div className="p-6">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="w-full md:w-56 h-44 relative rounded-xl overflow-hidden bg-sections/10 border border-border/20"
+                    >
+                      {firm.imagePath ? (
+                        <Image
+                          src={firm.imagePath}
+                          alt={firm.name}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 224px"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-accents/10 to-accents/5 flex items-center justify-center">
+                          <div className="text-secondText/40">
+                            <Image
+                              src="/placeholder.jpg"
+                              width={64}
+                              height={64}
+                              alt="Brak zdjęcia"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+
+                    <div className="flex-1 space-y-4">
+                      <h2 className="text-2xl font-bold text-text">
+                        {firm.name}
+                      </h2>
+                      <p className="text-secondText/80 leading-relaxed">
+                        {firm.description}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2">
+                        <div className="px-3 py-1.5 bg-accents/5 text-accents rounded-lg text-sm border border-accents/10">
+                          📍 {firm.location}
+                        </div>
+                        <div className="px-3 py-1.5 bg-accents/5 text-accents rounded-lg text-sm border border-accents/10">
+                          🕒 {firm.openingHours}
                         </div>
                       </div>
-                    )}
-                  </motion.div>
 
-                  <div className="flex-1 space-y-4">
-                    <h2 className="text-2xl font-bold text-text">
-                      {firm.name}
-                    </h2>
-                    <p className="text-secondText/80 leading-relaxed">
-                      {firm.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      <div className="px-3 py-1.5 bg-accents/5 text-accents rounded-lg text-sm border border-accents/10">
-                        📍 {firm.location}
-                      </div>
-                      <div className="px-3 py-1.5 bg-accents/5 text-accents rounded-lg text-sm border border-accents/10">
-                        🕒 {firm.openingHours}
+                      <div className="text-sm text-secondText/70 flex items-center gap-2">
+                        <span className="text-text/80">🏠</span>
+                        {firm.address}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="text-sm text-secondText/70 flex items-center gap-2">
-                      <span className="text-text/80">🏠</span>
-                      {firm.address}
+                  <div className="mt-6 pt-6 border-t border-border/20">
+                    <h3 className="text-lg font-semibold mb-4 text-text/90">
+                      📋 Dostępne usługi
+                    </h3>
+                    <div className="grid gap-3">
+                      {firm.menuItems?.length > 0 ? (
+                        firm.menuItems.map((item) => (
+                          <motion.div
+                            key={item.id}
+                            whileHover={{ translateX: 5 }}
+                            className="p-4 rounded-xl bg-sections/5 hover:bg-sections/10 border border-border/20 transition-colors"
+                          >
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="space-y-1">
+                                <h4 className="text-base font-medium text-text">
+                                  {item.name}
+                                </h4>
+                                <p className="text-secondText/70 text-sm">
+                                  {item.description}
+                                </p>
+                                <span className="inline-block px-2 py-0.5 bg-accents/5 text-accents text-xs rounded-md border border-accents/10">
+                                  {item.category}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4 min-w-fit">
+                                <span className="text-lg font-bold text-accents/90">
+                                  {item.price.toLocaleString()} zł
+                                </span>
+                                <Link
+                                  href={`/book-service?firmId=${firm.id}&menuItemId=${item.id}`}
+                                  className="px-4 py-2.5 bg-accents hover:bg-accents/90 text-white rounded-lg font-medium flex items-center gap-2 transition-all"
+                                >
+                                  <span>Rezerwuj</span>
+                                  <span className="text-lg">→</span>
+                                </Link>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-secondText/70 bg-sections/5 rounded-xl border border-border/20">
+                          🚫 Brak dostępnych usług
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-6 pt-6 border-t border-border/20">
-                  <h3 className="text-lg font-semibold mb-4 text-text/90">
-                    📋 Dostępne usługi
-                  </h3>
-                  <div className="grid gap-3">
-                    {firm.menuItems?.length > 0 ? (
-                      firm.menuItems.map((item) => (
-                        <motion.div
-                          key={item.id}
-                          whileHover={{ translateX: 5 }}
-                          className="p-4 rounded-xl bg-sections/5 hover:bg-sections/10 border border-border/20 transition-colors"
-                        >
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="space-y-1">
-                              <h4 className="text-base font-medium text-text">
-                                {item.name}
-                              </h4>
-                              <p className="text-secondText/70 text-sm">
-                                {item.description}
-                              </p>
-                              <span className="inline-block px-2 py-0.5 bg-accents/5 text-accents text-xs rounded-md border border-accents/10">
-                                {item.category}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-4 min-w-fit">
-                              <span className="text-lg font-bold text-accents/90">
-                                {item.price.toLocaleString()} zł
-                              </span>
-                              <Link
-                                href={`/book-service?firmId=${firm.id}&menuItemId=${item.id}`}
-                                className="px-4 py-2.5 bg-accents hover:bg-accents/90 text-white rounded-lg font-medium flex items-center gap-2 transition-all"
-                              >
-                                <span>Rezerwuj</span>
-                                <span className="text-lg">→</span>
-                              </Link>
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-secondText/70 bg-sections/5 rounded-xl border border-border/20">
-                        🚫 Brak dostępnych usług
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-
-          {filteredFirms.length === 0 && !loading && (
+              </motion.div>
+            ))
+          ) : (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -273,7 +299,8 @@ export default function ServicesPage() {
             </motion.div>
           )}
 
-          {filteredFirms.length > firmsPerPage && (
+          {/* Pagination */}
+          {(data?.pagination?.totalPages ?? 0) > 1 && (
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-8">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -284,28 +311,31 @@ export default function ServicesPage() {
               </button>
 
               <div className="flex gap-2 flex-wrap justify-center">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => paginate(page)}
-                      className={`px-3 py-1 rounded-md ${
-                        currentPage === page
-                          ? "bg-accents text-white"
-                          : "bg-sections/10 text-text hover:bg-sections/20"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
+                {Array.from(
+                  { length: data!.pagination.totalPages },
+                  (_, i) => i + 1
+                ).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === page
+                        ? "bg-accents text-white"
+                        : "bg-sections/10 text-text hover:bg-sections/20"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
               </div>
 
               <button
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  setCurrentPage((prev) =>
+                    Math.min(prev + 1, data!.pagination.totalPages)
+                  )
                 }
-                disabled={currentPage === totalPages}
+                disabled={currentPage === data!.pagination.totalPages}
                 className="px-4 py-2 bg-accents/10 text-accents rounded-lg hover:bg-accents/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Następna
@@ -317,28 +347,3 @@ export default function ServicesPage() {
     </div>
   );
 }
-
-const ServiceSkeleton = () => (
-  <div className="border border-border/20 rounded-2xl bg-background/50 overflow-hidden shadow-sm">
-    <div className="p-6 animate-pulse">
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-56 h-44 bg-sections/10 rounded-xl" />
-        <div className="flex-1 space-y-4">
-          <div className="h-7 bg-sections/10 rounded w-2/3" />
-          <div className="h-16 bg-sections/10 rounded w-full" />
-          <div className="flex gap-2">
-            <div className="h-8 w-24 bg-sections/10 rounded-lg" />
-            <div className="h-8 w-24 bg-sections/10 rounded-lg" />
-          </div>
-          <div className="h-5 bg-sections/10 rounded w-2/5" />
-        </div>
-      </div>
-      <div className="mt-6 pt-6 border-t border-border/20 space-y-4">
-        <div className="h-6 w-1/6 bg-sections/10 rounded" />
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-20 bg-sections/10 rounded-xl" />
-        ))}
-      </div>
-    </div>
-  </div>
-);
