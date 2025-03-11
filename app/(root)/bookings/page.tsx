@@ -204,6 +204,7 @@ export default function ServicesPage() {
                               width={64}
                               height={64}
                               alt="Brak zdjęcia"
+                              priority
                             />
                           </div>
                         </div>
