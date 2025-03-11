@@ -1,4 +1,3 @@
-// app/api/auth/signup/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import prisma from "@/app/lib/prisma";
@@ -7,14 +6,11 @@ import { SignJWT } from "jose";
 import { z } from "zod";
 
 const signupSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters long" }),
+  email: z.string().email({ message: "Nieprawidłowy adres email" }),
+  password: z.string().min(6, { message: "Hasło musi mieć minimum 6 znaków" }),
   username: z
     .string()
-    .min(3, { message: "Username must be at least 3 characters long" }),
-  role: z.enum(["user"]).optional(), // opcjonalnie – domyślnie "user"
+    .min(3, { message: "Nazwa użytkownika musi mieć minimum 3 znaki" }),
 });
 
 export async function POST(request: Request) {
@@ -23,70 +19,91 @@ export async function POST(request: Request) {
     const parseResult = signupSchema.safeParse(body);
 
     if (!parseResult.success) {
-      const errors = parseResult.error.errors
-        .map((err) => err.message)
-        .join(", ");
-      return NextResponse.json({ error: errors }, { status: 400 });
+      return NextResponse.json(
+        { error: parseResult.error.errors.map((e) => e.message).join(", ") },
+        { status: 400 }
+      );
     }
 
-    const { email, password, username, role } = parseResult.data;
+    const { email, password, username } = parseResult.data;
 
-    // Sprawdzanie, czy użytkownik już istnieje
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    // Sprawdzenie czy email jest dostępny
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
     if (existingUser) {
       return NextResponse.json(
-        { error: "User already exists" },
+        { error: "Użytkownik z tym adresem email już istnieje" },
         { status: 409 }
       );
     }
 
     // Haszowanie hasła
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Tworzenie nowego użytkownika (domyślnie rola "user", jeśli nie podano)
+    // Utworzenie użytkownika
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         username,
-        role: UserRole.CUSTOMER,
+        role: UserRole.CUSTOMER, // Upewnij się że wartość zgadza się z enumem w Prisma
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        role: true,
       },
     });
 
     // Generowanie JWT
-    const secret = process.env.JWT_SECRET || "your-secret-key";
-    const jwt = await new SignJWT({
+    const secret = new TextEncoder().encode(
+      process.env.JWT_SECRET || "default-secret-key"
+    );
+
+    const token = await new SignJWT({
       userId: user.id,
       role: user.role,
     })
+      .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("1h")
-      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-      .sign(new TextEncoder().encode(secret));
+      .setExpirationTime("2h")
+      .sign(secret);
 
-    // Ustawienie tokenu w ciasteczku
-    const response = NextResponse.json({
-      message: "User created successfully",
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        role: user.role,
+    // Konfiguracja odpowiedzi
+    const response = NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+        },
       },
-    });
-    response.cookies.set("token", jwt, {
+      { status: 201 } // Użyj statusu 201 dla nowo utworzonych zasobów
+    );
+
+    // Ustawienie ciasteczka
+    response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
       maxAge: 60 * 60 * 2, // 2 godziny
       path: "/",
     });
 
     return response;
   } catch (error: any) {
-    console.error("Error creating user:", error);
+    console.error("[SIGNUP_ERROR]", error);
     return NextResponse.json(
-      { error: "Error creating user", details: error.message },
+      {
+        error: "Wewnętrzny błąd serwera",
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
       { status: 500 }
     );
   }
