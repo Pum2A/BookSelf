@@ -1,4 +1,3 @@
-// app/profile/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -14,29 +13,50 @@ import { Loader2 } from "lucide-react";
 export default function ProfilePage() {
   const { user, setUser } = useUserStore();
   const [formData, setFormData] = useState({
-    username: user?.username || "",
-    bio: user?.bio || "",
+    username: "",
+    bio: "",
     avatar: null as File | null,
   });
+
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (user) {
       setFormData({
-        username: user.username,
-        bio: user.bio || "",
+        username: user?.username || "",
+        bio: user?.bio || "",
         avatar: null,
       });
+      setAvatarPreview(user.avatar || "");
     }
   }, [user]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Proszę wybrać plik obrazu");
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Maksymalny rozmiar pliku to 5MB");
+        return;
+      }
+
       setFormData((prev) => ({
         ...prev,
-        avatar: e.target.files![0],
+        avatar: file,
       }));
+
+      // Podgląd obrazu
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -59,7 +79,7 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Profile update failed");
+        throw new Error(errorData.error || "Profile update failed");
       }
 
       const updatedUser = await response.json();
@@ -100,20 +120,31 @@ export default function ProfilePage() {
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer "
+                  className="absolute inset-0 opacity-0 cursor-pointer"
                   id="avatarInput"
                 />
                 <label
                   htmlFor="avatarInput"
-                  className="inline-block px-6 py-3 bg-accents/10 text-accents border-2 border-bg-background rounded-lg cursor-pointer hover:bg-accents/20 transition-colors"
+                  className="inline-flex flex-col items-center gap-2 cursor-pointer"
                 >
-                  {formData.avatar ? "Change Avatar" : "Upload Avatar"}
-                </label>
-                {formData.avatar && (
-                  <span className="ml-4 text-secondText text-sm">
-                    {formData.avatar.name}
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-accents/20 hover:border-accents/50 transition-all">
+                    {avatarPreview && (
+                      <img
+                        src={avatarPreview}
+                        alt="Avatar preview"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <span className="text-white text-sm text-center">
+                        Change Avatar
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-sm text-accents hover:text-accents-dark">
+                    {formData.avatar ? "Change" : "Upload"} Avatar
                   </span>
-                )}
+                </label>
               </div>
             </div>
           </div>
