@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { PrismaClient } from "@prisma/client";
-import { writeFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
-import { existsSync } from "fs";
+import { put } from "@vercel/blob";
 
 const prisma = new PrismaClient();
 const secret = new TextEncoder().encode(
@@ -31,7 +29,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Weryfikacja tokenu
     let payload: JwtPayload;
     try {
       const { payload: verifiedPayload } = await jwtVerify(token, secret);
@@ -43,13 +40,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Pobierz parametry zapytania
     const searchParams = request.nextUrl.searchParams;
     const page = Number(searchParams.get("page")) || 1;
     const searchTerm = searchParams.get("search") || "";
     const category = searchParams.get("category") || "all";
 
-    // Budowanie warunków zapytania
     const where: any = {
       AND: [],
       ...(payload.role === "OWNER" && { ownerId: payload.userId }),
@@ -77,7 +72,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Paginacja
     const skip = (page - 1) * ITEMS_PER_PAGE;
     const [firms, total] = await Promise.all([
       prisma.firm.findMany({
@@ -123,7 +117,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Weryfikacja tokenu
     let payload: JwtPayload;
     try {
       const { payload: verifiedPayload } = await jwtVerify(token, secret);
@@ -138,10 +131,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Przetwarzanie formularza
     const formData = await request.formData();
 
-    // Walidacja pól
     const requiredFields = [
       "name",
       "description",
@@ -164,7 +155,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ekstrakcja danych
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const location = formData.get("location") as string;
@@ -172,8 +162,7 @@ export async function POST(request: NextRequest) {
     const openingHours = formData.get("openingHours") as string;
     const image = formData.get("image") as File | null;
 
-    // Obsługa obrazu
-    let imagePath = null;
+    let imageUrl = null;
     if (image && image.size > 0) {
       const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
       if (!allowedTypes.includes(image.type)) {
@@ -190,23 +179,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const buffer = Buffer.from(await image.arrayBuffer());
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const extension = image.name.split(".").pop();
-      const fileName = `firm_${timestamp}_${randomString}.${extension}`;
-      const uploadDir = join(process.cwd(), "public", "uploads", "firms");
-
-      if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, { recursive: true });
-      }
-
-      const filePath = join(uploadDir, fileName);
-      await writeFile(filePath, buffer);
-      imagePath = `/uploads/firms/${fileName}`;
+      const blob = await put(`firm-${Date.now()}-${image.name}`, image, {
+        access: "public",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      imageUrl = blob.url;
     }
 
-    // Tworzenie firmy
     const newFirm = await prisma.firm.create({
       data: {
         name,
@@ -214,7 +193,7 @@ export async function POST(request: NextRequest) {
         location,
         address,
         openingHours,
-        imagePath,
+        imagePath: imageUrl,
         ownerId: payload.userId,
       },
       include: { menuItems: true },
