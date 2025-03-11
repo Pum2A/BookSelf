@@ -1,4 +1,3 @@
-// app/api/bookings/available/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
@@ -28,7 +27,19 @@ export async function GET(request: Request) {
     );
   }
 
-  // (Opcjonalnie) weryfikacja tokenu – jeśli endpoint ma być dostępny tylko dla zalogowanych użytkowników
+  // Sprawdzenie, czy data nie jest w przeszłości
+  const requestDate = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (requestDate < today) {
+    return NextResponse.json(
+      { message: "Nie można dokonać rezerwacji na przeszłe daty." },
+      { status: 400 }
+    );
+  }
+
+  // Weryfikacja tokenu
   const cookieStore = cookies();
   const token = (await cookieStore).get("token")?.value;
   if (!token) {
@@ -58,7 +69,6 @@ export async function GET(request: Request) {
 
   // Wyznaczamy przedział czasu dla danego dnia
   const startDate = new Date(date);
-  // Ustawiamy początek dnia (00:00)
   startDate.setHours(0, 0, 0, 0);
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 1);

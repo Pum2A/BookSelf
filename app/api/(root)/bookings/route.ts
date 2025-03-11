@@ -121,8 +121,27 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Jeśli użytkownik jest klientem, zwróć tylko jego rezerwacje
-    // Jeśli jest adminem, może zobaczyć wszystkie rezerwacje
+    // Usuwanie przeterminowanych rezerwacji
+    if (payload.role === "CUSTOMER") {
+      await prisma.booking.deleteMany({
+        where: {
+          customerId: payload.userId,
+          bookingTime: {
+            lt: new Date(), // Usuń rezerwacje starsze niż aktualny czas
+          },
+        },
+      });
+    } else if (payload.role === "ADMIN") {
+      await prisma.booking.deleteMany({
+        where: {
+          bookingTime: {
+            lt: new Date(), // Usuń WSZYSTKIE przeterminowane rezerwacje
+          },
+        },
+      });
+    }
+
+    // Pobierz aktualne rezerwacje
     const where =
       payload.role === "CUSTOMER" ? { customerId: payload.userId } : {};
 
@@ -140,7 +159,7 @@ export async function GET(request: Request) {
         },
       },
       orderBy: {
-        bookingTime: "asc", // Sortowanie od najbliższej rezerwacji
+        bookingTime: "asc",
       },
     });
 

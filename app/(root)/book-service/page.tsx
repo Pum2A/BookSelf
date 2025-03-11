@@ -63,6 +63,13 @@ export default function BookServicePage() {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
+    const today = new Date().toISOString().split("T")[0];
+
+    if (newDate < today) {
+      toast.error("Nie można wybrać przeszłej daty.");
+      return;
+    }
+
     setDate(newDate);
     fetchAvailableSlots(newDate);
   };
@@ -90,6 +97,7 @@ export default function BookServicePage() {
         .map((err) => err.message)
         .join(". ");
       toast.error(DOMPurify.sanitize(errorMessage));
+      setIsSubmitting(false);
       return;
     }
 
