@@ -84,9 +84,21 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+async function getToken(request: Request) {
+  // Sprawdź token w nagłówku
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7); // Usuń "Bearer " z początku
+  }
+
+  // Jeśli nie ma w nagłówku, sprawdź w ciasteczkach
   const cookieStore = cookies();
-  const token = (await cookieStore).get("token")?.value;
+  return (await cookieStore).get("token")?.value;
+}
+
+// Modyfikujemy funkcję GET aby obsługiwała token z nagłówka
+export async function GET(request: Request) {
+  const token = await getToken(request);
 
   if (!token) {
     return NextResponse.json(
@@ -121,27 +133,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Usuwanie przeterminowanych rezerwacji
-    if (payload.role === "CUSTOMER") {
-      await prisma.booking.deleteMany({
-        where: {
-          customerId: payload.userId,
-          bookingTime: {
-            lt: new Date(), // Usuń rezerwacje starsze niż aktualny czas
-          },
-        },
-      });
-    } else if (payload.role === "ADMIN") {
-      await prisma.booking.deleteMany({
-        where: {
-          bookingTime: {
-            lt: new Date(), // Usuń WSZYSTKIE przeterminowane rezerwacje
-          },
-        },
-      });
-    }
-
-    // Pobierz aktualne rezerwacje
+    // Jeśli użytkownik jest klientem, zwróć tylko jego rezerwacje
+    // Jeśli jest adminem, może zobaczyć wszystkie rezerwacje
     const where =
       payload.role === "CUSTOMER" ? { customerId: payload.userId } : {};
 
@@ -159,7 +152,7 @@ export async function GET(request: Request) {
         },
       },
       orderBy: {
-        bookingTime: "asc",
+        bookingTime: "asc", // Sortowanie od najbliższej rezerwacji
       },
     });
 
@@ -173,10 +166,19 @@ export async function GET(request: Request) {
   }
 }
 
-// Dodajemy metodę DELETE do anulowania rezerwacji
-export async function DELETE(request: Request) {
-  const url = new URL(request.url);
-  const bookingId = url.searchParams.get("id");
+// Modyfikujemy funkcję DELETE aby obsługiwała dynamiczne segmenty URL
+export async function DELETE(
+  request: Request,
+  { params }: { params: { bookingId?: string } }
+) {
+  // Obsługa obu formatów URL - dynamiczny segment i parametr
+  let bookingId = params?.bookingId;
+
+  // Jeśli nie ma w segmencie URL, sprawdź w parametrach zapytania
+  if (!bookingId) {
+    const url = new URL(request.url);
+    bookingId = url.searchParams.get("id") || undefined;
+  }
 
   if (!bookingId) {
     return NextResponse.json(
@@ -185,8 +187,7 @@ export async function DELETE(request: Request) {
     );
   }
 
-  const cookieStore = cookies();
-  const token = (await cookieStore).get("token")?.value;
+  const token = await getToken(request);
 
   if (!token) {
     return NextResponse.json(

@@ -1,4 +1,3 @@
-// app/bookings/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -33,11 +32,8 @@ export default function BookingsPage() {
           return;
         }
 
-        const response = await fetch("/api/bookings", {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
+        // Token jest już przechowywany w ciasteczku, więc nie musimy go wysyłać
+        const response = await fetch("/api/bookings");
 
         if (!response.ok) {
           throw new Error("Failed to fetch bookings");
@@ -59,11 +55,9 @@ export default function BookingsPage() {
     if (!confirm("Are you sure you want to cancel this booking?")) return;
 
     try {
-      const response = await fetch(`/api/bookings/${bookingId}`, {
+      // Używamy URL z poprawnym parametrem id
+      const response = await fetch(`/api/bookings?id=${bookingId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
       });
 
       if (!response.ok) {

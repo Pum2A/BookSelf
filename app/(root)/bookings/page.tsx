@@ -49,7 +49,7 @@ export default function ServicesPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("/api/menu-items/categories");
+        const res = await fetch("/api/categories");
         const data = await res.json();
         if (data.success) {
           setCategories(data.categories);
