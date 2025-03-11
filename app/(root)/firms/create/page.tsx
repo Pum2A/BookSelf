@@ -132,7 +132,7 @@ export default function CreateFirmPage() {
       return;
     }
 
-    if (!user) {
+    if (!user?.id) {
       toast.error(
         DOMPurify.sanitize("Musisz być zalogowany, aby dodać firmę.")
       );
@@ -148,7 +148,7 @@ export default function CreateFirmPage() {
       });
 
       // Add owner ID
-      formData.append("ownerId", user.id.toString());
+      formData.append("ownerId", user!.id.toString());
 
       // Add image if exists
       if (imageFile) {
@@ -169,7 +169,7 @@ export default function CreateFirmPage() {
 
       const createdFirm = await response.json();
       toast.success("Firma została utworzona pomyślnie!");
-      router.push(`/firms/${createdFirm.firm.id}`);
+      router.push(`/firms/${createdFirm.data.id}`);
     } catch (error: any) {
       toast.error(DOMPurify.sanitize(error.message));
     } finally {
