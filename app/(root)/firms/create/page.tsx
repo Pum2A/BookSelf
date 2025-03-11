@@ -185,7 +185,76 @@ export default function CreateFirmPage() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Pola formularza pozostają bez zmian */}
+          <div>
+            <label className="block text-text font-semibold mb-2">Nazwa:</label>
+            <input
+              type="text"
+              value={newFirm.name}
+              onChange={handleChange("name")}
+              className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+              maxLength={50}
+            />
+            {errors.name && (
+              <p className="text-red-400 text-sm mt-1">{errors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-2">Opis:</label>
+            <textarea
+              value={newFirm.description}
+              onChange={handleChange("description")}
+              className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+              maxLength={500}
+            />
+            {errors.description && (
+              <p className="text-red-400 text-sm mt-1">{errors.description}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-2">
+              Lokalizacja:
+            </label>
+            <input
+              type="text"
+              value={newFirm.location}
+              onChange={handleChange("location")}
+              className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+            />
+            {errors.location && (
+              <p className="text-red-400 text-sm mt-1">{errors.location}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-2">
+              Godziny otwarcia (HH:MM-HH:MM):
+            </label>
+            <input
+              type="text"
+              value={newFirm.openingHours}
+              onChange={handleChange("openingHours")}
+              placeholder="np. 08:00-16:00"
+              className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+            />
+            {errors.openingHours && (
+              <p className="text-red-400 text-sm mt-1">{errors.openingHours}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-2">Adres:</label>
+            <input
+              type="text"
+              value={newFirm.address}
+              onChange={handleChange("address")}
+              className="w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+            />
+            {errors.address && (
+              <p className="text-red-400 text-sm mt-1">{errors.address}</p>
+            )}
+          </div>
 
           <div>
             <label className="block text-text font-semibold mb-2">
