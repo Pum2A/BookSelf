@@ -92,6 +92,13 @@ export async function POST(request: Request) {
         firmId: Number(firmId),
       },
     });
+    
+    if(price > 1000) {
+      return NextResponse.json(
+        { message: "Cena nie może być większa niż 1000." },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
       { message: "Usługa została dodana.", newMenuItem },

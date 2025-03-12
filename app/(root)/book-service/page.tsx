@@ -14,8 +14,8 @@ const bookingSchema = z.object({
   selectedSlot: z.string().min(1, {
     message: "Wybierz godzinę rezerwacji",
   }),
-  numberOfPeople: z.number().min(1, {
-    message: "Liczba osób musi wynosić co najmniej 1",
+  numberOfPeople: z.number().max(1, {
+    message: "Liczba osób to max  1",
   }),
   firmId: z.string().min(1, {
     message: "Wymagane ID firmy",
@@ -192,7 +192,9 @@ export default function BookServicePage() {
             type="number"
             value={numberOfPeople}
             onChange={(e) => setNumberOfPeople(Number(e.target.value))}
+            max="1"
             min="1"
+            disabled
             className="w-full px-4 py-3 rounded-xl bg-background border-2 border-border focus:border-accents focus:ring-2 focus:ring-accents/30"
           />
         </div>

@@ -23,6 +23,10 @@ export default function AddMenuItemPage() {
       setError("Proszę uzupełnić wymagane pola.");
       return;
     }
+    if (formData.price > 1000){
+      setError("Cena nie może być większa niż 1000.");
+      return;
+    }
 
     const response = await fetch("/api/menu-items", {
       method: "POST",

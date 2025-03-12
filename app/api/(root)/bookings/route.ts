@@ -45,6 +45,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if(numberOfPeople > 1) {
+    return NextResponse.json(
+      { message: "Liczba osób to max 1" },
+      { status: 400 }
+    );
+  }
+
   // Przykładowa walidacja w endpointcie POST rezerwacji
   const existingBooking = await prisma.booking.findFirst({
     where: {
