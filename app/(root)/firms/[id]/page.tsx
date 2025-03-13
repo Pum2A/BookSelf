@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { toast } from "sonner";
 
 interface MenuItem {
   id: number;
@@ -39,13 +40,13 @@ export default function FirmDetailPage() {
 
   useEffect(() => {
     if (!id) {
-      setError("Nie znaleziono ID firmy");
+      toast.error("Nieprawidłowe ID firmy");
       return;
     }
 
     fetch(`/api/firms/${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Firma nie znaleziona");
+        if (!res.ok) throw toast.error("Błąd pobierania firmy");
         return res.json();
       })
       .then((data) => {
@@ -58,7 +59,9 @@ export default function FirmDetailPage() {
           address: data.address,
         });
       })
-      .catch((err) => setError(err.message));
+      .catch((err) =>
+        setError(err.message || toast.error("Błąd pobierania firmy"))
+      );
   }, [id]);
 
   const handleUpdate = async (e: FormEvent) => {
@@ -71,10 +74,10 @@ export default function FirmDetailPage() {
     if (response.ok) {
       const updatedFirm = await response.json();
       setFirm(updatedFirm);
-      alert("Firma została zaktualizowana");
+      toast.success("Firma została zaktualizowana");
     } else {
       const errorData = await response.json();
-      setError(errorData.message || "Błąd aktualizacji firmy");
+      toast.error("Błąd aktualizacji Firmy");
     }
   };
 
@@ -82,11 +85,11 @@ export default function FirmDetailPage() {
     if (!confirm("Czy na pewno chcesz usunąć firmę?")) return;
     const response = await fetch(`/api/firms/${id}`, { method: "DELETE" });
     if (response.ok) {
-      alert("Firma została usunięta");
+      toast.success("Firma została usunięta");
       router.push("/firms");
     } else {
       const errorData = await response.json();
-      setError(errorData.message || "Błąd usuwania firmy");
+      toast.error("Nie udało się usunąć firmy");
     }
   };
 
@@ -96,13 +99,14 @@ export default function FirmDetailPage() {
       const response = await fetch(`/api/menu-items/${itemId}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Błąd usuwania usługi");
+      if (!response.ok) toast.error("Nie udało się usunąć usługi");
+
       const updatedFirm = await fetch(`/api/firms/${id}`).then((res) =>
         res.json()
       );
       setFirm(updatedFirm);
     } catch (err) {
-      setError("Nie udało się usunąć usługi");
+      toast.error("Nie udało się usunąć usługi");
     }
   };
 
