@@ -3,6 +3,33 @@
 import React, { useEffect, useState, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const firmSchema = z.object({
+  name: z
+    .string()
+    .min(3, "Nazwa musi mieć minimum 3 znaki")
+    .max(50, "Nazwa może mieć maksymalnie 50 znaków")
+    .regex(/^[a-zA-Z0-9\sąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/, "Niedozwolone znaki w nazwie"),
+  description: z
+    .string()
+    .min(10, "Opis musi mieć minimum 10 znaków")
+    .max(500, "Opis może mieć maksymalnie 500 znaków"),
+  location: z
+    .string()
+    .min(3, "Lokalizacja musi mieć minimum 3 znaki")
+    .regex(
+      /^[a-zA-Z\sąćęłńóśźżĄĆĘŁŃÓŚŹŻ-]+$/,
+      "Nieprawidłowy format lokalizacji"
+    ),
+  openingHours: z
+    .string()
+    .regex(
+      /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      "Format HH:MM-HH:MM"
+    ),
+  address: z.string().min(5, "Adres musi mieć minimum 5 znaków"),
+});
 
 interface MenuItem {
   id: number;
@@ -36,7 +63,8 @@ export default function FirmDetailPage() {
     openingHours: "",
     address: "",
   });
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -46,7 +74,7 @@ export default function FirmDetailPage() {
 
     fetch(`/api/firms/${id}`)
       .then((res) => {
-        if (!res.ok) throw toast.error("Błąd pobierania firmy");
+        if (!res.ok) throw new Error("Błąd pobierania firmy");
         return res.json();
       })
       .then((data) => {
@@ -59,37 +87,76 @@ export default function FirmDetailPage() {
           address: data.address,
         });
       })
-      .catch((err) =>
-        setError(err.message || toast.error("Błąd pobierania firmy"))
-      );
+      .catch(() => toast.error("Błąd pobierania firmy"));
   }, [id]);
+
+  const validateField = (field: string, value: string) => {
+    const result = firmSchema.safeParse({ ...formData, [field]: value });
+    if (!result.success) {
+      const fieldError = result.error.errors.find((e) =>
+        e.path.includes(field)
+      )?.message;
+      setErrors((prev) => ({ ...prev, [field]: fieldError || "" }));
+    } else {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleChange =
+    (field: string) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      validateField(field, value);
+    };
 
   const handleUpdate = async (e: FormEvent) => {
     e.preventDefault();
-    const response = await fetch(`/api/firms/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
-    });
-    if (response.ok) {
+    setIsSubmitting(true);
+
+    const result = firmSchema.safeParse(formData);
+    if (!result.success) {
+      const newErrors = result.error.errors.reduce((acc, curr) => {
+        acc[curr.path[0]] = curr.message;
+        return acc;
+      }, {} as Record<string, string>);
+      setErrors(newErrors);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/firms/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Błąd aktualizacji firmy");
+      }
+
       const updatedFirm = await response.json();
       setFirm(updatedFirm);
       toast.success("Firma została zaktualizowana");
-    } else {
-      const errorData = await response.json();
-      toast.error("Błąd aktualizacji Firmy");
+    } catch (error: any) {
+      toast.error(error.message || "Błąd aktualizacji firmy");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
     if (!confirm("Czy na pewno chcesz usunąć firmę?")) return;
-    const response = await fetch(`/api/firms/${id}`, { method: "DELETE" });
-    if (response.ok) {
+    try {
+      const response = await fetch(`/api/firms/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Błąd usuwania firmy");
+
       toast.success("Firma została usunięta");
       router.push("/firms");
-    } else {
-      const errorData = await response.json();
-      toast.error("Nie udało się usunąć firmy");
+    } catch (error: any) {
+      toast.error(error.message || "Nie udało się usunąć firmy");
     }
   };
 
@@ -99,29 +166,25 @@ export default function FirmDetailPage() {
       const response = await fetch(`/api/menu-items/${itemId}`, {
         method: "DELETE",
       });
-      if (!response.ok) toast.error("Nie udało się usunąć usługi");
+      if (!response.ok) throw new Error("Błąd usuwania usługi");
 
       const updatedFirm = await fetch(`/api/firms/${id}`).then((res) =>
         res.json()
       );
       setFirm(updatedFirm);
-    } catch (err) {
-      toast.error("Nie udało się usunąć usługi");
+      toast.success("Usługa została usunięta");
+    } catch (error: any) {
+      toast.error(error.message || "Nie udało się usunąć usługi");
     }
   };
 
-  if (error)
-    return (
-      <div className="max-w-3xl mx-auto p-8">
-        <p className="text-red-500 text-center">{error}</p>
-      </div>
-    );
-  if (!firm)
+  if (!firm) {
     return (
       <div className="max-w-3xl mx-auto p-8">
         <p className="text-center text-text">Ładowanie...</p>
       </div>
     );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-8">
@@ -137,28 +200,33 @@ export default function FirmDetailPage() {
             <strong>Właściciel (ID):</strong> {firm.ownerId}
           </p>
         </div>
+
         <form onSubmit={handleUpdate} className="space-y-5">
           <div>
             <label className="block text-text font-semibold mb-1">Nazwa:</label>
             <input
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={handleChange("name")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+              maxLength={50}
             />
+            {errors.name && (
+              <p className="text-red-400 text-sm mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-text font-semibold mb-1">Opis:</label>
             <textarea
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={handleChange("description")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents h-32"
+              maxLength={500}
             />
+            {errors.description && (
+              <p className="text-red-400 text-sm mt-1">{errors.description}</p>
+            )}
           </div>
 
           <div>
@@ -168,26 +236,28 @@ export default function FirmDetailPage() {
             <input
               type="text"
               value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
+              onChange={handleChange("location")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
             />
+            {errors.location && (
+              <p className="text-red-400 text-sm mt-1">{errors.location}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-text font-semibold mb-1">
-              Godziny otwarcia:
+              Godziny otwarcia (HH:MM-HH:MM):
             </label>
             <input
               type="text"
               value={formData.openingHours}
-              onChange={(e) =>
-                setFormData({ ...formData, openingHours: e.target.value })
-              }
+              onChange={handleChange("openingHours")}
+              placeholder="np. 08:00-16:00"
               className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
-              placeholder="np. 9:00 - 17:00"
             />
+            {errors.openingHours && (
+              <p className="text-red-400 text-sm mt-1">{errors.openingHours}</p>
+            )}
           </div>
 
           <div>
@@ -195,20 +265,25 @@ export default function FirmDetailPage() {
             <input
               type="text"
               value={formData.address}
-              onChange={(e) =>
-                setFormData({ ...formData, address: e.target.value })
-              }
+              onChange={handleChange("address")}
               className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
             />
+            {errors.address && (
+              <p className="text-red-400 text-sm mt-1">{errors.address}</p>
+            )}
           </div>
 
           <button
             type="submit"
-            className="w-full bg-accents hover:bg-accents-dark text-white py-2 rounded-lg transition-colors"
+            disabled={isSubmitting}
+            className={`w-full ${
+              isSubmitting ? "bg-gray-600" : "bg-accents hover:bg-accents-dark"
+            } text-white py-2 rounded-lg transition-colors`}
           >
-            Zaktualizuj firmę
+            {isSubmitting ? "Aktualizowanie..." : "Zaktualizuj firmę"}
           </button>
         </form>
+
         <button
           onClick={handleDelete}
           className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition-colors"
@@ -227,6 +302,7 @@ export default function FirmDetailPage() {
             + Dodaj nową usługę
           </button>
         </div>
+
         <div className="space-y-4">
           {firm.menuItems?.map((item) => (
             <div
@@ -263,6 +339,7 @@ export default function FirmDetailPage() {
               </div>
             </div>
           ))}
+
           {firm.menuItems?.length === 0 && (
             <p className="text-center text-text/70 py-4">
               Brak dostępnych usług
