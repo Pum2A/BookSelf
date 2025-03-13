@@ -1,119 +1,130 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, FormEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 
 export default function AddMenuItemPage() {
+  const params = useParams();
   const router = useRouter();
-  const { id } = useParams(); // id firmy przekazywane jako parametr URL
-
+  const { id } = params;
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    price: "",
+    price: "0",
     category: "",
   });
-  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.price || !formData.category) {
-      setError("Proszę uzupełnić wymagane pola.");
+      setError("Wypełnij wszystkie wymagane pola");
       return;
     }
-    if (formData.price > 1000){
+
+    const priceValue = parseFloat(formData.price);
+
+    if (priceValue > 1000) {
       setError("Cena nie może być większa niż 1000.");
       return;
     }
 
-    const response = await fetch("/api/menu-items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...formData, firmId: id }),
-    });
+    if (priceValue < 0) {
+      setError("Cena nie może być ujemna.");
+      return;
+    }
 
-    if (response.ok) {
-      alert("Usługa została dodana pomyślnie.");
+    try {
+      const newMenuItem = {
+        name: formData.name,
+        description: formData.description,
+        price: priceValue,
+        category: formData.category,
+        firmId: Number(id),
+      };
+
+      const response = await fetch("/api/menu-items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newMenuItem),
+      });
+
+      if (!response.ok) throw new Error("Błąd dodawania usługi");
+
       router.push(`/firms/${id}`);
-    } else {
-      const data = await response.json();
-      setError(data.message || "Błąd podczas dodawania usługi");
+    } catch (err) {
+      setError("Nie udało się dodać usługi");
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8">
-      <div className="bg-background shadow rounded-lg p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center text-text">
+    <div className="max-w-3xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6">Dodaj nową usługę</h1>
+
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-background p-6 rounded-lg shadow"
+      >
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        <div>
+          <label className="block mb-2 font-semibold">Nazwa usługi *</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full p-2 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 font-semibold">Opis</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            className="w-full p-2 border rounded-lg h-32"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 font-semibold">Cena (PLN) *</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            max="1000"
+            value={formData.price}
+            onChange={(e) =>
+              setFormData({ ...formData, price: e.target.value })
+            }
+            className="w-full p-2 border rounded-lg"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 font-semibold">Kategoria *</label>
+          <input
+            type="text"
+            value={formData.category}
+            onChange={(e) =>
+              setFormData({ ...formData, category: e.target.value })
+            }
+            className="w-full p-2 border rounded-lg"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+        >
           Dodaj usługę
-        </h1>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block mb-2 font-semibold text-text">
-              Nazwa usługi
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="Wpisz nazwę usługi"
-              required
-              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text focus:outline-none focus:ring-2 focus:ring-accents"
-            />
-          </div>
-          <div>
-            <label className="block mb-2 font-semibold text-text">Opis</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Opcjonalny opis usługi"
-              rows={4}
-              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text focus:outline-none focus:ring-2 focus:ring-accents"
-            ></textarea>
-          </div>
-          <div>
-            <label className="block mb-2 font-semibold text-text">Cena</label>
-            <input
-              type="number"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
-              }
-              placeholder="Podaj cenę"
-              required
-              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text focus:outline-none focus:ring-2 focus:ring-accents"
-            />
-          </div>
-          <div>
-            <label className="block mb-2 font-semibold text-text">
-              Kategoria
-            </label>
-            <input
-              type="text"
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              placeholder="Wpisz kategorię"
-              required
-              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text focus:outline-none focus:ring-2 focus:ring-accents"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-accents hover:bg-accents-dark text-white font-bold py-3 px-6 rounded-lg transition-colors"
-          >
-            Dodaj usługę
-          </button>
-        </form>
-      </div>
+        </button>
+      </form>
     </div>
   );
 }
