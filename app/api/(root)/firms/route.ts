@@ -215,3 +215,26 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest){
+  const cookieStore = cookies();
+  const token = (await cookieStore).get("token")?.value;
+
+  if (!token) {
+    return NextResponse.json(
+      { success: false, message: "Brak tokenu. Musisz być zalogowany." },
+      { status: 401 }
+    );
+  }
+
+  let payload: JwtPayload;
+  try {
+    const { payload: verifiedPayload } = await jwtVerify(token, secret);
+    payload = verifiedPayload as unknown as JwtPayload;
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: "Nieprawidłowy lub wygasły token." },
+      { status: 401 }
+    );
+  }
+}

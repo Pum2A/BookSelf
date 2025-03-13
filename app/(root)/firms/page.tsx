@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronRightIcon, Loader, Loader2 } from "lucide-react";
+import { ChevronRightIcon, Loader, Loader2, Router } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Firm {
   id: number;
@@ -63,6 +64,57 @@ export default function FirmsListPage() {
       </div>
     );
   }
+
+  const handleUpdate = async (e: FormEvent, id: number) => {
+    e.preventDefault();
+    const response = await fetch(`/api/firms/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(FormData),
+    });
+    if (response.ok) {
+      const updatedFirm = await response.json();
+      setFirms(updatedFirm);
+      alert("Firma zostala zaktualizowana");
+    } else {
+      const errorData = await response.json();
+      setError(errorData.message || "blad aktualizacji firmy");
+    }
+  };
+
+  const router = useRouter();
+  const handleDelete = async (e: FormEvent, id: number) => {
+    e.preventDefault();
+    const response = await fetch(`/api/firms/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(FormData),
+    });
+    if (response.ok) {
+      alert("Firma zostala usunięta");
+      router.push("/firms");
+    } else {
+      const errorData = await response.json();
+      setError(errorData.message || "blad usuniecia firmy");
+    }
+  };
+
+  const handleDeleteMenuItem = async (itemId: number, id: number) => {
+    if (!confirm("Czy na pewno chcesz usunąć tę usługę?")) return;
+    try {
+      const response = await fetch(`/api/menu-items/${itemId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Błąd usuwania usługi");
+      // Odśwież dane firmy po usunięciu usługi
+      const updatedFirm = await fetch(`/api/firms/${id}`).then((res) =>
+        res.json()
+      );
+      setFirms(updatedFirm);
+    } catch (err) {
+      setError("Nie udało się usunąć usługi");
+    }
+  };
 
   return (
     <div className="container mx-auto p-8">

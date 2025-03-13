@@ -97,7 +97,6 @@ export default function FirmDetailPage() {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Błąd usuwania usługi");
-      // Odśwież dane firmy
       const updatedFirm = await fetch(`/api/firms/${id}`).then((res) =>
         res.json()
       );
@@ -146,7 +145,59 @@ export default function FirmDetailPage() {
               className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
             />
           </div>
-          {/* Możesz dodać kolejne pola według potrzeb */}
+
+          <div>
+            <label className="block text-text font-semibold mb-1">Opis:</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents h-32"
+            />
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-1">
+              Lokalizacja:
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) =>
+                setFormData({ ...formData, location: e.target.value })
+              }
+              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+            />
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-1">
+              Godziny otwarcia:
+            </label>
+            <input
+              type="text"
+              value={formData.openingHours}
+              onChange={(e) =>
+                setFormData({ ...formData, openingHours: e.target.value })
+              }
+              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+              placeholder="np. 9:00 - 17:00"
+            />
+          </div>
+
+          <div>
+            <label className="block text-text font-semibold mb-1">Adres:</label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+              className="w-full border border-border rounded-lg px-4 py-2 bg-secondary text-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents"
+            />
+          </div>
+
           <button
             type="submit"
             className="w-full bg-accents hover:bg-accents-dark text-white py-2 rounded-lg transition-colors"
