@@ -53,7 +53,7 @@ export default async function RootLayout({
               user
                 ? {
                     username: user.username,
-                    avatar: user.avatar || "/default-avatar.png",
+                    avatar: user.avatar || "/default-icon.jpg",
                   }
                 : null
             }

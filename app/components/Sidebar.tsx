@@ -212,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
                 <div className="relative">
                   <div className="absolute inset-0 bg-accents/10 blur-lg rounded-full" />
                   <img
-                    src={userData.avatar || "/default-avatar.png"}
+                    src={userData.avatar || "default-icon.jpg"}
                     alt="Profile"
                     className="w-12 h-12 rounded-full object-cover border-2 border-accents/20 relative z-10"
                   />
