@@ -27,11 +27,10 @@ export async function GET(request: Request) {
     );
   }
 
-  // Sprawdzenie, czy data nie jest w przeszłości
+  // Sprawdzenie, czy data nie jest w przeszłości (porównujemy tylko datę)
   const requestDate = new Date(date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   if (requestDate < today) {
     return NextResponse.json(
       { message: "Nie można dokonać rezerwacji na przeszłe daty." },
@@ -59,15 +58,41 @@ export async function GET(request: Request) {
     );
   }
 
-  // Ustalamy dostępne godziny – przykładowo od 9:00 do 18:00
-  const availableHours: number[] = [];
-  const startHour = 9;
-  const endHour = 18;
+  // Pobieramy godzin otwarcia firmy ustawione przez właściciela
+  const firm = await prisma.firm.findUnique({
+    where: { id: Number(firmId) },
+    select: { openingHours: true },
+  });
+
+  if (!firm || !firm.openingHours) {
+    return NextResponse.json(
+      { message: "Nie znaleziono firmy lub brak ustawionych godzin otwarcia." },
+      { status: 400 }
+    );
+  }
+
+  // Oczekujemy, że openingHours ma format "HH:MM-HH:MM", np. "08:00-16:00"
+  const [startTime, endTime] = firm.openingHours.split("-");
+  const [startHourStr] = startTime.split(":");
+  const [endHourStr] = endTime.split(":");
+  const startHour = Number(startHourStr);
+  const endHour = Number(endHourStr);
+
+  // Tworzymy listę dostępnych godzin na podstawie godzin otwarcia
+  let availableHours: number[] = [];
   for (let hour = startHour; hour < endHour; hour++) {
     availableHours.push(hour);
   }
 
-  // Wyznaczamy przedział czasu dla danego dnia
+  // Jeśli rezerwacja dotyczy bieżącego dnia, filtrujemy godziny, które już minęły
+  const todayISO = new Date().toISOString().split("T")[0];
+  let filteredHours = availableHours;
+  if (date === todayISO) {
+    const now = new Date();
+    filteredHours = availableHours.filter((hour) => hour > now.getHours());
+  }
+
+  // Wyznaczamy przedział czasu dla danego dnia (od północy do północy kolejnego dnia)
   const startDate = new Date(date);
   startDate.setHours(0, 0, 0, 0);
   const endDate = new Date(startDate);
@@ -85,16 +110,14 @@ export async function GET(request: Request) {
   });
 
   // Wyciągamy godziny, w których już są rezerwacje
-  const bookedHours = bookings.map((booking) => {
-    return new Date(booking.bookingTime).getHours();
-  });
-
-  // Filtrujemy dostępne godziny – usuwamy te, które są już zajęte
-  const freeHours = availableHours.filter(
-    (hour) => !bookedHours.includes(hour)
+  const bookedHours = bookings.map((booking) =>
+    new Date(booking.bookingTime).getHours()
   );
 
-  // Formatowanie – np. "09:00", "10:00", etc.
+  // Filtrujemy dostępne godziny – usuwamy te, które są już zajęte
+  const freeHours = filteredHours.filter((hour) => !bookedHours.includes(hour));
+
+  // Formatowanie – np. "08:00", "09:00", etc.
   const formattedFreeHours = freeHours.map(
     (hour) => `${hour.toString().padStart(2, "0")}:00`
   );

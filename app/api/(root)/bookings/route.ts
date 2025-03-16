@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if(numberOfPeople > 1) {
+  if (numberOfPeople > 1) {
     return NextResponse.json(
       { message: "Liczba osób to max 1" },
       { status: 400 }
@@ -162,6 +162,33 @@ export async function GET(request: Request) {
         bookingTime: "asc", // Sortowanie od najbliższej rezerwacji
       },
     });
+
+    // Przenoszenie przeszłych rezerwacji do historii
+    const now = new Date();
+    const pastBookings = bookings.filter(
+      (booking) => new Date(booking.bookingTime) < now
+    );
+
+    if (pastBookings.length > 0) {
+      await prisma.bookingHistory.createMany({
+        data: pastBookings.map((booking) => ({
+          bookingId: booking.id,
+          bookingTime: booking.bookingTime,
+          numberOfPeople: booking.numberOfPeople,
+          customerId: booking.customerId,
+          firmId: booking.firmId,
+          menuItemId: booking.menuItemId,
+        })),
+      });
+
+      await prisma.booking.deleteMany({
+        where: {
+          id: {
+            in: pastBookings.map((booking) => booking.id),
+          },
+        },
+      });
+    }
 
     return NextResponse.json(bookings, { status: 200 });
   } catch (error: any) {

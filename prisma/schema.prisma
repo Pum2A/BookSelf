@@ -29,14 +29,24 @@ model Firm {
   location     String
   openingHours String
   address      String
-  imagePath    String? // Dodaj tę linię
   ownerId      Int
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  imagePath    String?
   bookings     Booking[]  @relation("FirmBookings")
   owner        User       @relation("UserFirms", fields: [ownerId], references: [id])
   menuItems    MenuItem[] @relation("FirmMenuItems")
   reviews      Review[]   @relation("FirmReviews")
+}
+
+model BookingHistory {
+  id             Int      @id @default(autoincrement())
+  bookingId      Int
+  bookingTime    DateTime
+  numberOfPeople Int
+  customerId     Int
+  firmId         Int
+  menuItemId     Int?
 }
 
 model MenuItem {
