@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FormEvent, useRef } from "react";
+import React, { useState, FormEvent, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/stores/userStore";
 import { toast } from "sonner";
@@ -91,28 +91,35 @@ export default function CreateFirmPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setImageFile(file);
-
     if (file) {
       validateField("image", file);
 
-      const reader = new FileReader();
-      reader.onloadstart = () => setUploadProgress(0);
-      reader.onprogress = (e) => {
-        if (e.lengthComputable) {
-          setUploadProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        setUploadProgress(100);
-      };
-      reader.readAsDataURL(file);
+      // Revoke previous preview to avoid memory leaks
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      const previewUrl = URL.createObjectURL(file);
+      setImageFile(file);
+      setImagePreview(previewUrl);
+      setUploadProgress(100); // Instant preview using object URL
     } else {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      setImageFile(null);
       setImagePreview(null);
       setUploadProgress(0);
     }
   };
+
+  // Cleanup the object URL on component unmount or when imagePreview changes
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();

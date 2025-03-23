@@ -35,6 +35,11 @@ export default function AddMenuItemPage() {
       return;
     }
 
+    if (priceValue === 0) {
+      setError("Cena nie może być równa 0.");
+      return;
+    }
+
     try {
       const newMenuItem = {
         name: formData.name,

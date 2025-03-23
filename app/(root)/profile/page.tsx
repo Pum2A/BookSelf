@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image"; // New import for optimized images
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,7 +52,7 @@ export default function ProfilePage() {
         avatar: file,
       }));
 
-      // Podgląd obrazu
+      // Generate image preview
       const reader = new FileReader();
       reader.onload = () => {
         setAvatarPreview(reader.result as string);
@@ -129,10 +130,12 @@ export default function ProfilePage() {
                 >
                   <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-accents/20 hover:border-accents/50 transition-all">
                     {avatarPreview && (
-                      <img
+                      <Image
                         src={avatarPreview}
                         alt="Avatar preview"
-                        className="w-full h-full object-cover"
+                        fill // fills the parent container
+                        style={{ objectFit: "cover" }}
+                        sizes="96px" // ensures optimal sizing for a 24x24 rem container
                       />
                     )}
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">

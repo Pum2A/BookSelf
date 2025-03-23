@@ -2,37 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Domyślny motyw (jeden – dark) */
 :root {
-  /* Dark Theme (default) using hex values */
-  --background: #0a0a0a;
-  --sections: #1a1a1a;
-  --accents: #FF6B6B;
-  --accents-dark: #CC5555;
-  --text: #ffffff;
-  --secondText: #b3b3b3;
-  --border: #404040;
+  --background: #111827;    /* odpowiada bg-gray-900 */
+  --sections: #1F2937;      /* odpowiada bg-gray-800 */
+  --accents: #4F46E5;       /* akcent – np. używany w przyciskach, logo */
+  --accents-dark: #4338CA;   /* ciemniejszy akcent */
+  --text: #F3F4F6;          /* główny kolor tekstu (jasnoszary) */
+  --secondText: #9CA3AF;    /* drugi kolor tekstu (średni szary) */
+  --border: #374151;        /* kolor obramowania */
 }
 
-[data-theme="light"] {
-  --background: #ffffff;
-  --sections: #f8f9fa;
-  --accents: #CC5555;
-  --accents-dark: #FF6B6B;
-  --text: #1a1a1a;
-  --secondText: #666666;
-  --border: #d4d4d4;
-}
-
-/* Smooth transition for theme changes */
+/* Płynna zmiana kolorów (jeśli zdecydujesz się kiedyś przełączać motywy) */
 body {
   background-color: var(--background);
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Poppins", sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Podstawowe style dla elementów formularzy */
 input,
 textarea,
 select {
-  @apply w-full border border-border rounded-lg px-4 py-2 bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accents;
+  @apply w-full border border-border rounded-lg px-4 py-2 bg-sections text-text placeholder-secondText focus:outline-none focus:ring-2 focus:ring-accents;
 }

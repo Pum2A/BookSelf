@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/stores/userStore";
@@ -41,47 +42,52 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({
+const navItemVariants = {
+  hover: { scale: 1.05 },
+};
+
+const NavItemComponent: React.FC<NavItemProps> = ({
   href,
   icon: Icon,
   label,
   active = false,
   onClick,
-}) => {
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`group relative w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-all duration-300
-        ${
-          active
-            ? "bg-accents/10 text-accents before:absolute before:left-0 before:h-6 before:w-1 before:bg-accents before:rounded-full"
-            : "text-secondText hover:bg-background/50 hover:text-text"
-        }`}
+}) => (
+  <Link
+    href={href}
+    onClick={onClick}
+    className={`group relative w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-colors duration-300
+      ${
+        active
+          ? "bg-accents/10 text-accents before:absolute before:left-0 before:h-6 before:w-1 before:bg-accents before:rounded-full"
+          : "text-secondText hover:bg-sections hover:text-text"
+      }`}
+  >
+    <motion.div
+      variants={navItemVariants}
+      whileHover="hover"
+      className="p-2 rounded-lg bg-sections/50 backdrop-blur-sm"
     >
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        className="p-2 rounded-lg bg-background/20 backdrop-blur-sm"
-      >
-        <Icon
-          size={20}
-          className={`${
-            active ? "text-accents" : "text-secondText group-hover:text-accents"
-          }`}
-        />
-      </motion.div>
-      <span className="font-medium text-sm">{label}</span>
-      <ChevronRightIcon
-        size={16}
-        className={`ml-auto transform transition-transform ${
-          active
-            ? "text-accents"
-            : "text-secondText opacity-0 group-hover:opacity-100"
+      <Icon
+        size={20}
+        className={`${
+          active ? "text-accents" : "text-secondText group-hover:text-accents"
         }`}
       />
-    </Link>
-  );
-};
+    </motion.div>
+    <span className="font-medium text-sm">{label}</span>
+    <ChevronRightIcon
+      size={16}
+      className={`ml-auto transform transition-opacity ${
+        active
+          ? "text-accents"
+          : "text-secondText opacity-0 group-hover:opacity-100"
+      }`}
+    />
+  </Link>
+);
+
+const NavItem = React.memo(NavItemComponent);
 
 const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
   const { menuOpen, toggleMenu } = useMenu();
@@ -96,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleBecomeOWNER = async () => {
+  const handleBecomeOWNER = useCallback(async () => {
     try {
       const response = await fetch("/api/users/become-owner", {
         method: "POST",
@@ -105,20 +111,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
       });
       if (response.ok) {
         toast.success("Jesteś OWNEREM!");
-        const update = useUserStore.getState().updateUserRole;
-        update("OWNER");
+        useUserStore.getState().updateUserRole("OWNER");
         router.refresh();
       } else {
-        toast.error("Nie udało sie zupgradować konta!");
+        toast.error("Nie udało się zupgradować konta!");
       }
     } catch (error) {
       console.error("Become OWNER error:", error);
-      toast.error("Nie udało sie zupgradować konta!");
+      toast.error("Nie udało się zupgradować konta!");
     }
-  };
+  }, [router, user]);
 
-  // Nowa funkcja przełączająca rolę z OWNER na customer
-  const handleSwitchToCustomer = async () => {
+  const handleSwitchToCustomer = useCallback(async () => {
     try {
       const response = await fetch("/api/users/become-user", {
         method: "POST",
@@ -136,9 +140,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
       console.error("Switch to customer error:", error);
       toast.error("Error switching role");
     }
-  };
+  }, [router, user]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/signout", { method: "POST" });
       if (response.ok) {
@@ -152,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
       console.error("Sign out error:", error);
       toast.error("An error occurred while signing out.");
     }
-  };
+  }, [router]);
 
   return (
     <>
@@ -162,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-md z-40 lg:hidden"
             onClick={toggleMenu}
           />
         )}
@@ -172,13 +176,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={toggleMenu}
-        className="fixed top-4 right-4 p-2 rounded-xl bg-background/80 backdrop-blur-lg text-text z-50 lg:hidden shadow-xl hover:bg-sections/50 transition-all"
+        className="fixed top-4 right-4 p-2 rounded-xl bg-background/80 backdrop-blur-md text-text z-50 lg:hidden shadow-lg hover:bg-sections transition-colors"
       >
         <MenuIcon size={24} />
       </motion.button>
 
       <motion.div
-        className="fixed top-0 left-0 h-screen w-72 bg-background/95 backdrop-blur-lg border-r border-border/20 z-50 flex flex-col shadow-2xl"
+        className="fixed top-0 left-0 h-screen w-72 bg-background/95 backdrop-blur-lg border-r border-border z-50 flex flex-col shadow-2xl"
         initial={false}
         animate={menuOpen || isDesktop ? "open" : "closed"}
         variants={{
@@ -206,19 +210,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="p-4 mb-4 rounded-xl bg-background/50 border border-border/20"
+              className="p-4 mb-4 rounded-xl bg-sections shadow-lg transition-all"
             >
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-accents/10 blur-lg rounded-full" />
-                  <img
-                    src={userData.avatar || "default-icon.jpg"}
+                  <div className="absolute inset-0 bg-accents/10 blur-md rounded-full" />
+                  <Image
+                    src={userData.avatar || "/default-icon.jpg"}
                     alt="Profile"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-accents/20 relative z-10"
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover border-2 border-border relative z-10"
                   />
                   {userData.role === "OWNER" && (
-                    <div className="absolute -top-1 -right-1 bg-accents rounded-full p-1.5 shadow-sm">
-                      <ShieldIcon size={12} className="text-text" />
+                    <div className="absolute -top-1 -right-1 bg-accents rounded-full p-1 shadow-md">
+                      <ShieldIcon size={12} className="text-background" />
                     </div>
                   )}
                 </div>
@@ -228,7 +234,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
                   </p>
                   <Link
                     href="/profile"
-                    className="text-xs text-secondText/80 hover:text-accents truncate flex items-center gap-1 transition-colors"
+                    className="text-xs text-secondText hover:text-accents transition-colors flex items-center gap-1 truncate"
                   >
                     View Profile <ChevronRightIcon size={12} />
                   </Link>
@@ -240,7 +246,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
           {/* Navigation Items */}
           <div className="flex-1 overflow-y-auto space-y-4">
             <div className="space-y-2">
-              <h3 className="px-4 text-xs font-medium text-secondText/60 uppercase tracking-wider mb-1">
+              <h3 className="px-4 text-xs font-medium text-secondText uppercase tracking-wider mb-1">
                 Navigation
               </h3>
               <nav className="space-y-1">
@@ -266,7 +272,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
             </div>
 
             <div className="space-y-2">
-              <h3 className="px-4 text-xs font-medium text-secondText/60 uppercase tracking-wider mb-1">
+              <h3 className="px-4 text-xs font-medium text-secondText uppercase tracking-wider mb-1">
                 Management
               </h3>
               <nav className="space-y-1">
@@ -280,7 +286,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
           </div>
 
           {/* Account Section */}
-          <div className="mt-auto space-y-4 pt-4 border-t border-border/10">
+          <div className="mt-auto space-y-4 pt-4 border-t border-border">
             {isLoggedIn && user?.role !== "OWNER" && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -289,7 +295,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
               >
                 <Button
                   onClick={handleBecomeOWNER}
-                  className="w-full bg-accents/5 hover:bg-accents/10 text-accents rounded-lg transition-all"
+                  className="w-full bg-gradient-to-br from-accents to-accents-dark text-text rounded-lg transition-colors shadow-xl hover:shadow-2xl"
                   size="sm"
                 >
                   <ShieldIcon size={16} className="mr-2" />
@@ -306,7 +312,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
               >
                 <Button
                   onClick={handleSwitchToCustomer}
-                  className="w-full bg-blue-500/5 hover:bg-blue-500/10 text-blue-400 rounded-lg transition-all"
+                  className="w-full bg-gradient-to-br from-accents to-accents-dark text-text rounded-lg transition-colors shadow-xl hover:shadow-2xl"
                   size="sm"
                 >
                   <UserIcon size={16} className="mr-2" />
@@ -319,11 +325,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, userData }) => {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="border-t border-border/10 pt-4"
+                className="border-t border-border pt-4"
               >
                 <Button
                   onClick={handleSignOut}
-                  className="w-full bg-red-500/5 hover:bg-red-500/10 text-red-400 rounded-lg transition-all"
+                  className="w-full bg-gradient-to-br from-red-600 to-red-500 text-text rounded-lg transition-colors shadow-xl hover:shadow-2xl"
                   size="default"
                 >
                   <LogOutIcon size={16} className="mr-2" />

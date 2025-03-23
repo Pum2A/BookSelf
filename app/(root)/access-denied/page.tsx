@@ -7,7 +7,7 @@ export default function AccessDeniedPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Po 3 sekundach przekierowujemy użytkownika na /home
+    // Redirect to /home after 3 seconds
     const timer = setTimeout(() => {
       router.replace("/home");
     }, 3000);
@@ -15,8 +15,8 @@ export default function AccessDeniedPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-      <h1 className="text-4xl font-bold text-red-500 mb-4">Access Denied</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background font-poppins text-text">
+      <h1 className="text-4xl font-bold text-accents mb-4">Access Denied</h1>
       <p className="text-lg text-secondText mb-4">
         You do not have permission to access this page.
       </p>
